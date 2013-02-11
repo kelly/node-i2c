@@ -1,0 +1,12 @@
+{
+  "name": "node-i2c",
+  "version": "0.0.1",
+  "description": "native c bindings for i2c-tools",
+  "main": "app.js",
+  "repository": "",
+  "author": "",
+  "license": "BSD",
+  "dependencies": {
+    "bindings": "~1.0.0"
+  }
+}
