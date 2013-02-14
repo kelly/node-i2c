@@ -1,12 +1,12 @@
 {
   "name": "i2c",
   "version": "0.0.1",
-  "description": "i2c interface for node",
+  "description": "i2c interface for node.js, play well with Raspberry Pi",
   "main": "main.js",
   "author": "Kelly Korevec",
   "repository": {
     "type": "git",
-    "url": "http://github.com/korevec/node-i2c.igt"
+    "url": "http://github.com/korevec/node-i2c.git"
   },
   "license": "BSD",
   "dependencies": {
@@ -14,3 +14,4 @@
     "underscore": "1.2.4",
     "coffee-script": "1.3.3"
   }
+}
