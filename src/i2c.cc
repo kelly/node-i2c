@@ -5,15 +5,15 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <stdio.h>
-#include <linux/i2c-dev.h>
-#include "smbus.h"
+#include "i2c-dev.h"
+// #include "smbus.h"
 #include <unistd.h>
 
 using namespace v8;
 int fd;
 
 void setAddress(int8_t addr) {
-  int result = ioctl(fd, I2C_SLAVE, addr);
+  int result = ioctl(fd, I2C_SLAVE_FORCE, addr);
   if (result == -1) {
     ThrowException(
       Exception::TypeError(String::New("Failed to set address"))
@@ -44,7 +44,8 @@ Handle<Value> Scan(const Arguments& args) {
   Local<Array> results(Array::New(128));
 
   for (i = 0; i < 128; i++) {
-    ioctl(fd, I2C_SLAVE, i);
+    // ioctl(fd, I2C_SLAVE, i);
+    setAddress(i);
     if ((i >= 0x30 && i <= 0x37) || (i >= 0x50 && i <= 0x5F)) {
       res = i2c_smbus_read_byte(fd);
     } else { 
@@ -61,6 +62,9 @@ Handle<Value> Scan(const Arguments& args) {
 Handle<Value> Close(const Arguments& args) {
   HandleScope scope;
 
+  if (fd > 0) {
+    close(fd);
+  }
   return scope.Close(Undefined());
 }
 
@@ -83,14 +87,20 @@ Handle<Value> Read(const Arguments& args) {
 
   int i;
   int8_t addr = args[0]->Int32Value();
-  int len = args[1]->Int32Value();
+  int8_t cmd  = args[1]->Int32Value();
+  int len     = args[2]->Int32Value();
   Local<Array> results(Array::New(len));
 
   setAddress(addr);
 
   for(i = 0; i < len; i++) {
-    int8_t byte = readByte();
-    results->Set(i, Integer::New(byte));
+    int8_t byte;
+    if (i == 0) {
+      byte = i2c_smbus_read_byte_data(fd, cmd);
+    } else {
+      byte = readByte();
+    }
+    results->Set(i, Number::New(byte));
   }
 
   return scope.Close(results);
@@ -99,14 +109,20 @@ Handle<Value> Read(const Arguments& args) {
 Handle<Value> Write(const Arguments& args) {
   HandleScope scope;
 
-  int i;
-  int len = args.Length();
   int8_t addr = args[0]->Int32Value();
-
   setAddress(addr);
 
-  for (i = 1; i < len; i++) {
-    int8_t byte = args[i]->Int32Value();
+  if (args[1]->IsArray()) {
+    Local<Array> bytes = Array::Cast(*args[1]);
+    int len = bytes->Length();
+    int i;
+
+    for (i = 0; i < len; i++) {
+      int8_t byte = bytes->Get(i)->Int32Value();
+      writeByte(byte);
+    }
+  } else {
+    int8_t byte = args[1]->Int32Value();
     writeByte(byte);
   }
   return scope.Close(Undefined());
@@ -116,9 +132,9 @@ Handle<Value> Stream(const Arguments& args) {
   HandleScope scope;
 
   int i;
-  uint8_t addr   = args[0]->Int32Value();
-  int32_t len    = args[1]->Int32Value();
-  int32_t delay  = args[2]->Int32Value();
+  int8_t addr   = args[0]->Int32Value();
+  int32_t len   = args[1]->Int32Value();
+  int32_t delay = args[2]->Int32Value();
 
   if (!args[3]->IsFunction()) {
     return ThrowException(Exception::TypeError(
@@ -149,6 +165,9 @@ void Init(Handle<Object> target) {
 
   target->Set(String::NewSymbol("open"),
     FunctionTemplate::New(Open)->GetFunction());
+
+  target->Set(String::NewSymbol("close"),
+    FunctionTemplate::New(Close)->GetFunction());
 
   target->Set(String::NewSymbol("write"),
       FunctionTemplate::New(Write)->GetFunction());

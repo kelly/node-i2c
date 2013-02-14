@@ -1,12 +1,16 @@
 {
-  "name": "node-i2c",
+  "name": "i2c",
   "version": "0.0.1",
-  "description": "native c bindings for i2c-tools",
-  "main": "app.js",
-  "repository": "",
-  "author": "",
+  "description": "i2c interface for node",
+  "main": "main.js",
+  "author": "Kelly Korevec",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/korevec/node-i2c.igt"
+  },
   "license": "BSD",
   "dependencies": {
-    "bindings": "~1.0.0"
+    "bindings": "~1.0.0",
+    "underscore": "1.2.4"
   }
 }

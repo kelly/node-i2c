@@ -1,17 +1,16 @@
-wire = require '../build/Release/i2c'
-_    = require 'underscore'
-# repl = require 'repl'
+_            = require 'underscore'
+wire         = require '../build/Release/i2c'
+EventEmitter = require('events').EventEmitter
 
-class i2c
+class i2c extends EventEmitter
 
-  constructor: (device) ->
+  constructor: (device, @options = {}) ->    
     _.defaults @options,
-      delay: 100
+      debug: true
 
     wire.open(device)
 
-    process.on 'exit', ->
-      wire.close()
+    process.on 'exit', -> wire.close()
 
   write: (addr, bytes) ->
     wire.write(addr, bytes);
@@ -19,10 +18,14 @@ class i2c
   scan: ->
     result = _.filter wire.scan(), (num) -> return num >= 0
 
-  read: (addr, len) ->
-    wire.read(addr, len)
+  read: (addr, cmd, len = 1) ->
+    wire.read addr, cmd, len
 
-  stream: (addr, len, callback) ->
-    wire.stream(addr, len, @options.delay, callback)
+  stream: (addr, cmd, len = 1, delay = 100) ->
+    wire.stream addr, len, delay, (data) =>
+      @emit 'stream:read', 
+        data       : data
+        address    : addr
+        timestamp  : Date.now()
 
 module.exports = i2c

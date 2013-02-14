@@ -1,4 +1,12 @@
-node-i2c
+i2c
 ========
 
-Native c bindings for i2c-tools lib. Built for Rasbperry Pi.
+Bindings for i2c-dev lib. Plays well with Rasbperry Pi.
+
+usage:
+
+wire = new i2c('/dev/i2c-0')
+
+wire.scan();
+wire.write(address, bytes)
+wire.read(address, command, length);
