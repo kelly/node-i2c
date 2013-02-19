@@ -18,7 +18,8 @@ class Compass
     @wire.write(@address, [CNTL, MODE_SINGLE])
 
     @delay 100, =>
-      data = @wire.read @address, GET_HEADING, 2
+      @wire.write @address, GET_HEADING
+      data = @wire.read @address, 2
       # raw = 
       #   x : (data[1] << 8) | data[0]
       #   y : (data[3] << 8) | data[2]
@@ -26,8 +27,9 @@ class Compass
 
       callback(data)
 
-  getInfo: ->
-    @wire.read @address, GET_INFO, 1
+  getInfo: (callback) ->
+    @wire.write @address, GET_INFO
+    @wire.read @address, 1, callback
 
   delay: (time, callback) ->
     setTimeout callback, time

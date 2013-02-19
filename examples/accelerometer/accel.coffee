@@ -20,31 +20,28 @@ class Accelerometer
     @setRange()
     @setBandwidth()
 
+    @wire.on 'data', (data) ->
+      console.log data
+
   setRange: ->
     @wire.write(@address, [RANGE_BWIDTH, RANGE_BIT, RANGE_LENGTH, RANGE_2G])
 
-  testConnection: ->
-    @getDeviceID()[0] == 0b010
+  testConnection: (callback) ->
+    @getDeviceID (err, data) ->
+     data[0] == 0b010
 
-  getDeviceID: ->
-    @wire.read(@address, GET_ID, 1)
+  getDeviceID: (callback) ->
+    @wire.write @address, GET_ID
+    @wire.read @address, 1, callback
 
   setBandwidth: ->
     @wire.write(@address, [RANGE_BWIDTH, BANDWIDTH_BIT, BANDWIDTH_LENGTH, BW_25HZ])
 
   getMotion:  ->
-    data = @wire.read(@address, 0x02, 6)
-    raw = 
-      x : (((data[1] << 8) | data[0]) >> 6).toString(16)
-      y : (((data[3] << 8) | data[2]) >> 6).toString(16)
-      z : (((data[5] << 8) | data[4]) >> 6).toString(16)
+    # @wire.write @address, 0x02
+    @wire.stream @address, 0x02, 6, 100 
 
 
 accel = new Accelerometer()
 
-if accel.testConnection() 
-  setTimeout ->
-    setInterval ->
-      console.log accel.getMotion()
-    , 25
-  , 50
+accel.getMotion()

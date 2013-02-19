@@ -8,24 +8,34 @@ class i2c extends EventEmitter
     _.defaults @options,
       debug: true
 
-    wire.open(device)
+    wire.open device, (err) -> 
+      if err then throw err 
 
-    process.on 'exit', -> wire.close()
+    process.on 'exit', => @close()
 
-  write: (addr, bytes) ->
-    wire.write(addr, bytes);
+  write: (addr, bytes, callback) ->
+    wire.write addr, bytes, callback
 
-  scan: ->
-    result = _.filter wire.scan(), (num) -> return num >= 0
+  scan: (callback) ->
+    wire.scan (err, data) ->
+      data = _.filter data, (num) -> return num >= 0
+      callback err, data
 
-  read: (addr, cmd, len = 1) ->
-    wire.read addr, cmd, len
+  read: (addr, len, callback) ->
+    wire.read addr, len, callback
+
+  close: (callback) ->
+    wire.close()
 
   stream: (addr, cmd, len = 1, delay = 100) ->
-    wire.stream addr, len, delay, (data) =>
-      @emit 'stream:read', 
-        data       : data
-        address    : addr
-        timestamp  : Date.now()
+    wire.stream addr, cmd, len, delay, (err, data) =>
+      if err
+        @emit 'error', err
+      else 
+        @emit 'data', 
+          data       : data
+          address    : addr
+          timestamp  : Date.now()
+    @
 
 module.exports = i2c

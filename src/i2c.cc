@@ -13,38 +13,23 @@ using namespace v8;
 int fd;
 
 void setAddress(int8_t addr) {
-  int result = ioctl(fd, I2C_SLAVE_FORCE, addr);
-  if (result == -1) {
-    ThrowException(
-      Exception::TypeError(String::New("Failed to set address"))
-    );
-  }
+  ioctl(fd, I2C_SLAVE_FORCE, addr);
 }
-void writeByte(int8_t byte) {
-  int result = i2c_smbus_write_byte(fd, byte);
-  if (result == -1) {
-    ThrowException(
-      Exception::TypeError(String::New("Cannot write to I2C"))
-    );  
-  }
+int8_t writeByte(int8_t byte) {
+  return i2c_smbus_write_byte(fd, byte);
 }
 int8_t readByte() {
-  int result = i2c_smbus_read_byte(fd);
-  if (result == -1) {
-    ThrowException(
-      Exception::TypeError(String::New("Cannot read byte"))
-    );  
-  }
-  return result;
+  return i2c_smbus_read_byte(fd);
 }
 Handle<Value> Scan(const Arguments& args) {
   HandleScope scope;
 
   int i, res;
+  Local<Function> callback = Local<Function>::Cast(args[0]);
   Local<Array> results(Array::New(128));
+  Local<Value> err = Local<Value>::New(Null());
 
   for (i = 0; i < 128; i++) {
-    // ioctl(fd, I2C_SLAVE, i);
     setAddress(i);
     if ((i >= 0x30 && i <= 0x37) || (i >= 0x50 && i <= 0x5F)) {
       res = i2c_smbus_read_byte(fd);
@@ -56,6 +41,10 @@ Handle<Value> Scan(const Arguments& args) {
     }
     results->Set(i, Integer::New(res));
   }
+  const unsigned argc = 2;
+  Local<Value> argv[argc] = { err, results };
+  callback->Call(Context::GetCurrent()->Global(), argc, argv);
+
   return scope.Close(results);
 }
 
@@ -72,13 +61,21 @@ Handle<Value> Open(const Arguments& args) {
   HandleScope scope;
 
   String::Utf8Value device(args[0]);
+  Local<Value> err = Local<Value>::New(Null());
 
   fd = open(*device, O_RDWR);
   if (fd == -1) {
-    return ThrowException(
-      Exception::TypeError(String::New("Failed to open I2C device"))
-    );
+    err = Exception::Error(String::New("Failed to open I2C device"));
   }
+
+  if (args[1]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(args[1]);
+    Local<Value> argv[argc] = { err };
+
+    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+  }
+
   return scope.Close(Undefined());
 }
 
@@ -87,21 +84,24 @@ Handle<Value> Read(const Arguments& args) {
 
   int i;
   int8_t addr = args[0]->Int32Value();
-  int8_t cmd  = args[1]->Int32Value();
-  int len     = args[2]->Int32Value();
+  int len     = args[1]->Int32Value();
+  Local<Function> callback = Local<Function>::Cast(args[2]);
+  Local<Value> err = Local<Value>::New(Null());
   Local<Array> results(Array::New(len));
 
   setAddress(addr);
 
   for(i = 0; i < len; i++) {
-    int8_t byte;
-    if (i == 0) {
-      byte = i2c_smbus_read_byte_data(fd, cmd);
+    int8_t res = readByte();
+    if (res == -1) { 
+      err = Exception::Error(String::New("Cannot read device"));
     } else {
-      byte = readByte();
+      results->Set(i, Number::New(res));
     }
-    results->Set(i, Number::New(byte));
   }
+  const unsigned argc = 2;
+  Local<Value> argv[argc] = { err, results };
+  callback->Call(Context::GetCurrent()->Global(), argc, argv);
 
   return scope.Close(results);
 }
@@ -110,21 +110,36 @@ Handle<Value> Write(const Arguments& args) {
   HandleScope scope;
 
   int8_t addr = args[0]->Int32Value();
+  int8_t res;
+
+  Local<Value> err = Local<Value>::New(Null());
+
   setAddress(addr);
 
   if (args[1]->IsArray()) {
     Local<Array> bytes = Array::Cast(*args[1]);
     int len = bytes->Length();
     int i;
-
     for (i = 0; i < len; i++) {
       int8_t byte = bytes->Get(i)->Int32Value();
-      writeByte(byte);
+      res = writeByte(byte);
     }
   } else {
     int8_t byte = args[1]->Int32Value();
-    writeByte(byte);
+    res = writeByte(byte);
   }
+  if (res == -1) {
+    err = Exception::Error(String::New("Cannot write to device"));
+  }
+
+  if (args[2]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(args[2]);
+    Local<Value> argv[argc] = { err };
+
+    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+  }
+
   return scope.Close(Undefined());
 }
 
@@ -133,28 +148,38 @@ Handle<Value> Stream(const Arguments& args) {
 
   int i;
   int8_t addr   = args[0]->Int32Value();
-  int32_t len   = args[1]->Int32Value();
-  int32_t delay = args[2]->Int32Value();
+  int8_t cmd    = args[1]->Int32Value();
+  int32_t len   = args[2]->Int32Value();
+  int32_t delay = args[3]->Int32Value();
+  int8_t res;
 
-  if (!args[3]->IsFunction()) {
-    return ThrowException(Exception::TypeError(
-      String::New("Fourth argument must be a callback function")));
-  }
+  Local<Function> callback = Local<Function>::Cast(args[4]);
+  Local<Array> results(Array::New(len));
+  Local<Value> err = Local<Value>::New(Null());
 
-  Local<Function> callback = Local<Function>::Cast(args[3]);
-  Local<Value> results[len];
+  setAddress(addr);
 
-    while(1) {
-      setAddress(addr);
-
+  while(fd) {
+    if(writeByte(cmd) == 0) { 
       for(i = 0; i < len; i++) {
-        int res = readByte();
-        results[i] = Local<Value>::New(Integer::New(res));
+        res = readByte();
+        if(res == -1) { 
+          err = Exception::Error(String::New("Cannot read device"));
+        } else {
+          results->Set(i, Integer::New(res));
+        }
       }
-
-      callback->Call(Context::GetCurrent()->Global(), 1, results);
+      const unsigned argc = 2;
+      Local<Value> argv[argc] = { err, results };
+      callback->Call(Context::GetCurrent()->Global(), argc, argv);
       usleep(delay);
+    } else {
+        err = Exception::Error(String::New("Cannot write to device"));
+        const unsigned argc = 1;
+        Local<Value> argv[argc] = { err };
+        callback->Call(Context::GetCurrent()->Global(), argc, argv);
     }
+  }
 
    return Undefined();
 }
