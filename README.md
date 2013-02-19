@@ -6,7 +6,8 @@ Bindings for i2c-dev lib. Plays well with Raspberry Pi.
 
 ```javascript
 
-wire = new i2c('/dev/i2c-0'); // point to your i2c device
+var wire = new i2c('/dev/i2c-0'); // point to your i2c device
+var address = 0x18;
 
 wire.scan(function(err, data) {
   // result contains an array of addresses
@@ -16,12 +17,12 @@ wire.write(address, [byte0, byte1], function(err) {});
 
 wire.read(address, length, function(err, data) {
   // result contains an array of bytes
-})
+});
 
 wire.stream(address, command, length, delay); // continuous stream 
 wire.on('data', function(data) {
   // result for continuous stream contains data, address, timestamp
-})
+});
 ````
 
 # Raspberry Pi Setup
