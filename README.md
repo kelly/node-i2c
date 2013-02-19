@@ -18,9 +18,9 @@ wire.read(address, length, function(err, data) {
   // result contains an array of bytes
 })
 
-wire.stream(address, command, length, delay); // continous stream 
+wire.stream(address, command, length, delay); // continuous stream 
 wire.on('data', function(data) {
-  // results contains data, address, timestamp
+  // result for continuous stream contains data, address, timestamp
 })
 ````
 
