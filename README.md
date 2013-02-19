@@ -36,11 +36,10 @@ Comment out blacklist i2c-bcm2708
 #blacklist i2c-bcm2708
 ````
 
-Load kernel modules
+Load kernel module
 
 ````bash
 $ modprobe i2c-bcm2708
-$ modprobe i2c_dev
 ````
 
 # Wiring Example
