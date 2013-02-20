@@ -38,10 +38,8 @@ class Accelerometer
     @wire.write(@address, [RANGE_BWIDTH, BANDWIDTH_BIT, BANDWIDTH_LENGTH, BW_25HZ])
 
   getMotion:  ->
-    # @wire.write @address, 0x02
     @wire.stream @address, 0x02, 6, 100 
 
 
 accel = new Accelerometer()
-
 accel.getMotion()
