@@ -1,7 +1,7 @@
 {
   "name": "i2c",
-  "version": "0.0.3",
-  "description": "i2c interface for node.js, play well with Raspberry Pi",
+  "version": "0.0.4",
+  "description": "Bindings for i2c-dev lib. Plays well with Raspberry Pi.",
   "main": "main.js",
   "author": "Kelly Korevec",
   "repository": {
