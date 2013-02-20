@@ -2,11 +2,18 @@
 
 Bindings for i2c-dev lib. Plays well with Raspberry Pi.
 
+# Install
+
+````bash
+$ npm install i2c
+````
+
 # Usage
 
 ```javascript
 
-var wire = new i2c('/dev/i2c-0'); // point to your i2c device
+var i2c = require('i2c');
+var wire = new i2c('/dev/i2c-0', debug: true); // point to your i2c device, debug provides REPL interface
 var address = 0x18;
 
 wire.scan(function(err, data) {
@@ -24,6 +31,8 @@ wire.on('data', function(data) {
   // result for continuous stream contains data array, address, timestamp
 });
 ````
+
+
 
 # Raspberry Pi Setup
 

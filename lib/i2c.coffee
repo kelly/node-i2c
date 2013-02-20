@@ -6,10 +6,16 @@ class i2c extends EventEmitter
 
   constructor: (device, @options = {}) ->    
     _.defaults @options,
-      debug: true
+      debug: false
 
     wire.open device, (err) -> 
       if err then throw err 
+
+    if @options.debug 
+      require('repl').start(
+        prompt: "i2c > "
+      ).context.wire = @
+      process.stdin.emit 'data', 1 # trigger repl
 
     process.on 'exit', => @close()
 
@@ -18,13 +24,12 @@ class i2c extends EventEmitter
 
   scan: (callback) ->
     wire.scan (err, data) ->
-      data = _.filter data, (num) -> return num >= 0
-      callback err, data
+      callback err, _.filter data, (num) -> return num >= 0
 
   read: (addr, len, callback) ->
     wire.read addr, len, callback
 
-  close: (callback) ->
+  close: ->
     wire.close()
 
   stream: (addr, cmd, len = 1, delay = 100) ->

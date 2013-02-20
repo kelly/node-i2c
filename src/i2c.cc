@@ -6,7 +6,6 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include "i2c-dev.h"
-// #include "smbus.h"
 #include <unistd.h>
 
 using namespace v8;

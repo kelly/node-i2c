@@ -52,4 +52,5 @@ class Pixel
   _read: (length, callback) ->
     @wire.read @address, length, callback
 
-module.exports = Pixel
+pixel = new Pixel(0x18)
+pixel.setRGB(100,255,0)
