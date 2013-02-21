@@ -1,6 +1,6 @@
 {
   "name": "i2c",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Bindings for i2c-dev lib. Plays well with Raspberry Pi.",
   "main": "main.js",
   "author": "Kelly Korevec",

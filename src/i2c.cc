@@ -95,7 +95,7 @@ Handle<Value> Read(const Arguments& args) {
     if (res == -1) { 
       err = Exception::Error(String::New("Cannot read device"));
     } else {
-      results->Set(i, Number::New(res));
+      results->Set(i, Integer::New(res));
     }
   }
   const unsigned argc = 2;

@@ -1,4 +1,5 @@
 Wire          = require '../../main'
+_             = require 'underscore'
 
 # BlinkM http://thingm.com/products/blinkm
 # firmware http://code.google.com/p/codalyze/wiki/CyzRgb
@@ -38,7 +39,9 @@ class Pixel
 
   getRGB: (callback) ->
     @_send [GET_RGB]
-    @_read 3, callback
+    setTimeout =>
+      @_read 3, callback
+    , 200
 
   fadeToRGB: (r, g, b) ->
     @_send [FADE_TO_RGB, r, g, b]
@@ -53,4 +56,6 @@ class Pixel
     @wire.read @address, length, callback
 
 pixel = new Pixel(0x18)
-pixel.setRGB(100,255,0)
+pixel.setRGB(50,81,76)
+pixel.getRGB (err, data) ->
+  console.log _.map data, (num) -> parseInt(num);
