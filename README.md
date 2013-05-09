@@ -66,4 +66,4 @@ to-do
 
 # Questions?
 
-@korevec on twitter
+http://www.twitter.com/korevec
