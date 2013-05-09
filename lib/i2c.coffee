@@ -4,12 +4,12 @@ EventEmitter = require('events').EventEmitter
 
 class i2c extends EventEmitter
 
-  constructor: (device, @options = {}) ->    
+  history: []
+
+  constructor: (@address, @options = {}) ->
     _.defaults @options,
       debug: false
-
-    wire.open device, (err) -> 
-      if err then throw err 
+      device: "/dev/i2c-0"
 
     if @options.debug 
       require('repl').start(
@@ -19,28 +19,52 @@ class i2c extends EventEmitter
 
     process.on 'exit', => @close()
 
-  write: (addr, bytes, callback) ->
-    wire.write addr, bytes, callback
+    @on 'data', (data) => 
+      @history.push data
+
+    @on 'error', (err) ->
+      console.log "Error: #{error}"
+
+    @open @options.device, (err) =>
+      unless err then @setAddress @address
 
   scan: (callback) ->
     wire.scan (err, data) ->
       callback err, _.filter data, (num) -> return num >= 0
 
-  read: (addr, len, callback) ->
-    wire.read addr, len, callback
+  setAddress: (address) ->
+    wire.setAddress address
+    @address = address
+
+  open: (device, callback) ->
+    wire.open device, callback
 
   close: ->
     wire.close()
 
-  stream: (addr, cmd, len = 1, delay = 100) ->
-    wire.stream addr, cmd, len, delay, (err, data) =>
-      if err
+  writeByte: (byte, callback) ->
+    wire.writeByte byte, callback
+
+  writeBytes: (cmd, buf, callback) ->
+    unless Buffer.isBuffer(buf) then buf = new Buffer(buf)
+    wire.writeBlock cmd, buf, callback
+
+  readByte: (callback) ->
+    wire.readByte callback
+
+  readBytes: (cmd, len, callback) ->
+    wire.readBlock cmd, len, null, callback
+
+  stream: (cmd, len, delay = 100) ->
+    wire.readBlock cmd, len, delay, (err, data) =>
+      if err 
         @emit 'error', err
       else 
         @emit 'data', 
+          address    : @address
           data       : data
-          address    : addr
+          cmd        : cmd
+          length     : len
           timestamp  : Date.now()
-    @
 
 module.exports = i2c

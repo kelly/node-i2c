@@ -1,6 +1,6 @@
 # i2c
 
-Bindings for i2c-dev lib. Plays well with Raspberry Pi.
+Bindings for i2c-dev lib. Plays well with Raspberry Pi and Beaglebone.
 
 # Install
 
@@ -13,24 +13,29 @@ $ npm install i2c
 ```javascript
 
 var i2c = require('i2c');
-var wire = new i2c('/dev/i2c-0', debug: true); // point to your i2c device, debug provides REPL interface
 var address = 0x18;
+var wire = new i2c(address, debug: true); // point to your i2c device, debug provides REPL interface
 
 wire.scan(function(err, data) {
   // result contains an array of addresses
 });
 
-wire.write(address, [byte0, byte1], function(err) {});
+wire.writeByte(byte);
 
-wire.read(address, length, function(err, data) {
-  // result contains an array of bytes
+wire.readByte(function(err, res) {
+  // result is single byte
+})
+wire.writeBytes(command, [byte0, byte1], function(err) {});
+
+wire.readBytes(command, length, function(err, res) {
+  // result contains a buffer of bytes
 });
 
-wire.stream(address, command, length, delay); // continuous stream 
 wire.on('data', function(data) {
-  // result for continuous stream contains data array, address, timestamp
+  // result for continuous stream contains data buffer, address, length, timestamp
 });
 ````
+wire.stream(command, length, delay); // continuous stream, delay in ms
 
 
 
