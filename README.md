@@ -34,8 +34,11 @@ wire.readBytes(command, length, function(err, res) {
 wire.on('data', function(data) {
   // result for continuous stream contains data buffer, address, length, timestamp
 });
-````
+
 wire.stream(command, length, delay); // continuous stream, delay in ms
+
+
+````
 
 
 

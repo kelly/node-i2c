@@ -22,38 +22,36 @@ class Pixel
   address: 0x01
 
   constructor: (@address) ->
-    @wire = new Wire('/dev/i2c-0');
+    @wire = new Wire(@address);
 
   off: ->
     @setRGB(0, 0, 0)
 
   getAddress: (callback) ->
-    @_send [GET_ADDRESS]
-    @_read 1, callback
+    @_read GET_ADDRESS, 1, callback
 
   setFadeSpeed: (speed) ->
-    @_send [SET_FADE, speed]
+    @_send SET_FADE, speed
 
   setRGB: (r, g, b) ->
-    @_send [TO_RGB, r, g, b]
+    @_send TO_RGB, [r, g, b]
 
   getRGB: (callback) ->
-    @_send [GET_RGB]
     setTimeout =>
-      @_read 3, callback
+      @_read GET_RGB, 3, callback
     , 200
 
   fadeToRGB: (r, g, b) ->
-    @_send [FADE_TO_RGB, r, g, b]
+    @_send FADE_TO_RGB, [r, g, b]
 
   fadeToHSB: (h, s, b) ->
-    @_send [FADE_TO_HSB, h, s, b]
+    @_send FADE_TO_HSB, [h, s, b]
 
-  _send: (cmds) ->
-    @wire.write @address, cmds
+  _send: (cmd, values) ->
+    @wire.writeBytes cmd, values
 
-  _read: (length, callback) ->
-    @wire.read @address, length, callback
+  _read: (cmd, length, callback) ->
+    @wire.readBytes cmd, length, callback
 
 pixel = new Pixel(0x18)
 pixel.setRGB(50,81,76)
