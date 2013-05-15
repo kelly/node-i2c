@@ -9,7 +9,7 @@ class i2c extends EventEmitter
   constructor: (@address, @options = {}) ->
     _.defaults @options,
       debug: false
-      device: "/dev/i2c-0"
+      device: "/dev/i2c-1"
 
     if @options.debug 
       require('repl').start(
