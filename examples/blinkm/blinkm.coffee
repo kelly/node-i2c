@@ -1,4 +1,4 @@
-Wire          = require '../../main'
+Wire          = require 'i2c'
 _             = require 'underscore'
 
 # BlinkM http://thingm.com/products/blinkm
@@ -30,6 +30,9 @@ class Pixel
   getAddress: (callback) ->
     @_read GET_ADDRESS, 1, callback
 
+  getVersion: (callback) ->
+    @_read GET_VERSION, 1, callback
+
   setFadeSpeed: (speed) ->
     @_send SET_FADE, speed
 
@@ -52,8 +55,3 @@ class Pixel
 
   _read: (cmd, length, callback) ->
     @wire.readBytes cmd, length, callback
-
-pixel = new Pixel(0x18)
-pixel.setRGB(50,81,76)
-pixel.getRGB (err, data) ->
-  console.log _.map data, (num) -> parseInt(num);

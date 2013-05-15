@@ -14,18 +14,17 @@ $ npm install i2c
 
 var i2c = require('i2c');
 var address = 0x18;
-var wire = new i2c(address, debug: true); // point to your i2c device, debug provides REPL interface
+var wire = new i2c(address, device: '/dev/i2c-1', debug: true); // point to your i2c address, debug provides REPL interface
 
 wire.scan(function(err, data) {
   // result contains an array of addresses
 });
 
-wire.writeByte(byte);
+wire.writeByte(byte, function(err) {});
 
-wire.readByte(function(err, res) {
-  // result is single byte
-})
 wire.writeBytes(command, [byte0, byte1], function(err) {});
+
+wire.readByte(function(err, res) { // result is single byte })
 
 wire.readBytes(command, length, function(err, res) {
   // result contains a buffer of bytes
@@ -39,8 +38,6 @@ wire.stream(command, length, delay); // continuous stream, delay in ms
 
 
 ````
-
-
 
 # Raspberry Pi Setup
 
@@ -60,9 +57,19 @@ Load kernel module
 $ modprobe i2c-bcm2708
 ````
 
-# Wiring Example
+Set correct device for version
 
-to-do
+```javascript
+
+new i2c(address, device: '/dev/i2c-0') # rev 1
+new i2c(address, device: '/dev/i2c-1') # rev 2
+
+````
+
+# Devices 
+
+- HMC6343 https://github.com/omcaree/node-hmc6343
+- blinkm https://github.com/korevec/blinkm
 
 # Questions?
 
