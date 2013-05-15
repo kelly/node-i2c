@@ -61,8 +61,8 @@ Set correct device for version
 
 ```javascript
 
-new i2c(address, device: '/dev/i2c-0') # rev 1
-new i2c(address, device: '/dev/i2c-1') # rev 2
+new i2c(address, device: '/dev/i2c-0') // rev 1
+new i2c(address, device: '/dev/i2c-1') // rev 2
 
 ````
 
