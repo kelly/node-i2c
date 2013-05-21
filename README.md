@@ -2,13 +2,13 @@
 
 Bindings for i2c-dev lib. Plays well with Raspberry Pi and Beaglebone.
 
-# Install
+## Install
 
 ````bash
 $ npm install i2c
 ````
 
-# Usage
+## Usage
 
 ```javascript
 
@@ -39,7 +39,7 @@ wire.stream(command, length, delay); // continuous stream, delay in ms
 
 ````
 
-# Raspberry Pi Setup
+## Raspberry Pi Setup
 
 ````bash
 $ sudo vi /etc/modprobe.d/raspi-blacklist.conf
@@ -66,11 +66,12 @@ new i2c(address, device: '/dev/i2c-1') // rev 2
 
 ````
 
-# Devices 
+## Projects using i2c
 
-- HMC6343 https://github.com/omcaree/node-hmc6343
-- blinkm https://github.com/korevec/blinkm
+- **ADXL345** https://github.com/timbit123/ADXL345 
+- **HMC6343** https://github.com/omcaree/node-hmc6343
+- **blinkm** https://github.com/korevec/blinkm
 
-# Questions?
+## Questions?
 
 http://www.twitter.com/korevec
