@@ -1,6 +1,6 @@
 # i2c
 
-Bindings for i2c-dev lib. Plays well with Raspberry Pi and Beaglebone.
+Bindings for i2c-dev. Plays well with Raspberry Pi and Beaglebone.
 
 ## Install
 
@@ -54,7 +54,7 @@ Comment out blacklist i2c-bcm2708
 Load kernel module
 
 ````bash
-$ modprobe i2c-bcm2708
+$ sudo modprobe i2c-bcm2708
 ````
 
 Set correct device for version

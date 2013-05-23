@@ -14,12 +14,20 @@ using namespace v8;
 int fd;
 int8_t addr;
 
+void setAddress(int8_t addr) {
+  int result = ioctl(fd, I2C_SLAVE, addr);
+  if (result == -1) {
+    ThrowException(
+      Exception::TypeError(String::New("Failed to set address"))
+    );
+  }
+}
+
 Handle<Value> SetAddress(const Arguments& args) {
   HandleScope scope;
 
   addr = args[0]->Int32Value();
-
-  ioctl(fd, I2C_SLAVE_FORCE, addr);
+  setAddress(addr);
 
   return scope.Close(Undefined());
 }
@@ -33,7 +41,7 @@ Handle<Value> Scan(const Arguments& args) {
   Local<Value> err = Local<Value>::New(Null());
 
   for (i = 0; i < 128; i++) {
-    ioctl(fd, I2C_SLAVE_FORCE, i);
+    setAddress(i);
     if ((i >= 0x30 && i <= 0x37) || (i >= 0x50 && i <= 0x5F)) {
       res = i2c_smbus_read_byte(fd);
     } else { 
@@ -45,7 +53,7 @@ Handle<Value> Scan(const Arguments& args) {
     results->Set(i, Integer::New(res));
   }
 
-  ioctl(fd, I2C_SLAVE_FORCE, addr);
+  setAddress(addr);
 
   const unsigned argc = 2;
   Local<Value> argv[argc] = { err, results };
@@ -94,6 +102,8 @@ Handle<Value> ReadByte(const Arguments& args) {
 
   int8_t res = i2c_smbus_read_byte(fd);
 
+  setAddress(addr);
+
   if (i2c_smbus_read_byte(fd) == -1) { 
     err = Exception::Error(String::New("Cannot read device"));
   } else {
@@ -123,6 +133,8 @@ Handle<Value> ReadBlock(const Arguments& args) {
   Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
   Handle<Value> constructorArgs[3] = { buffer->handle_, v8::Integer::New(len), v8::Integer::New(0) };
   Local<Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
+
+  setAddress(addr);
 
   while (fd > 0) {
     if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
@@ -155,6 +167,8 @@ Handle<Value> WriteByte(const Arguments& args) {
   int8_t byte = args[0]->Int32Value();
   Local<Value> err = Local<Value>::New(Null());
 
+  setAddress(addr);
+
   if (i2c_smbus_write_byte(fd, byte) == -1) {
     err = Exception::Error(String::New("Cannot write to device"));
   }
@@ -181,6 +195,8 @@ Handle<Value> WriteBlock(const Arguments& args) {
 
   Local<Value> err = Local<Value>::New(Null());
 
+  setAddress(addr);
+
   if (i2c_smbus_write_i2c_block_data(fd, cmd, len, (unsigned char*) data) == -1) {
     err = Exception::Error(String::New("Cannot write to device"));
   }
@@ -203,6 +219,8 @@ Handle<Value> WriteWord(const Arguments& args) {
   int16_t word = args[1]->Int32Value();
 
   Local<Value> err = Local<Value>::New(Null());
+
+  setAddress(addr);
   
   if (i2c_smbus_write_word_data(fd, cmd, word) == -1) {
     err = Exception::Error(String::New("Cannot write to device"));
