@@ -1,7 +1,7 @@
 {
   "name": "i2c",
-  "version": "0.1.1",
-  "description": "Bindings for i2c-dev. Plays well with Raspberry Pi and BeagleBone.",
+  "version": "0.1.2",
+  "description": "Native bindings for i2c-dev. Plays well with Raspberry Pi and BeagleBone.",
   "main": "main.js",
   "author": "Kelly Korevec",
   "repository": {
