@@ -102,8 +102,6 @@ Handle<Value> ReadByte(const Arguments& args) {
 
   int8_t res = i2c_smbus_read_byte(fd);
 
-  setAddress(addr);
-
   if (i2c_smbus_read_byte(fd) == -1) { 
     err = Exception::Error(String::New("Cannot read device"));
   } else {
@@ -133,8 +131,6 @@ Handle<Value> ReadBlock(const Arguments& args) {
   Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
   Handle<Value> constructorArgs[3] = { buffer->handle_, v8::Integer::New(len), v8::Integer::New(0) };
   Local<Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
-
-  setAddress(addr);
 
   while (fd > 0) {
     if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
@@ -167,8 +163,6 @@ Handle<Value> WriteByte(const Arguments& args) {
   int8_t byte = args[0]->Int32Value();
   Local<Value> err = Local<Value>::New(Null());
 
-  setAddress(addr);
-
   if (i2c_smbus_write_byte(fd, byte) == -1) {
     err = Exception::Error(String::New("Cannot write to device"));
   }
@@ -195,8 +189,6 @@ Handle<Value> WriteBlock(const Arguments& args) {
 
   Local<Value> err = Local<Value>::New(Null());
 
-  setAddress(addr);
-
   if (i2c_smbus_write_i2c_block_data(fd, cmd, len, (unsigned char*) data) == -1) {
     err = Exception::Error(String::New("Cannot write to device"));
   }
@@ -219,8 +211,6 @@ Handle<Value> WriteWord(const Arguments& args) {
   int16_t word = args[1]->Int32Value();
 
   Local<Value> err = Local<Value>::New(Null());
-
-  setAddress(addr);
   
   if (i2c_smbus_write_word_data(fd, cmd, word) == -1) {
     err = Exception::Error(String::New("Cannot write to device"));

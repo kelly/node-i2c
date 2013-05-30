@@ -70,6 +70,7 @@ new i2c(address, device: '/dev/i2c-1') // rev 2
 
 - **ADXL345** https://github.com/timbit123/ADXL345 
 - **HMC6343** https://github.com/omcaree/node-hmc6343
+- **MPU6050** https://github.com/jstapels/mpu6050/
 - **blinkm** https://github.com/korevec/blinkm
 
 ## Questions?
