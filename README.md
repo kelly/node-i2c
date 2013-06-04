@@ -41,6 +41,18 @@ wire.stream(command, length, delay); // continuous stream, delay in ms
 
 ## Raspberry Pi Setup
 
+
+````bash
+$ sudo vi /etc/modules
+````
+
+Add these two lines
+
+````bash
+i2c-bcm2708 
+i2c-dev
+````
+
 ````bash
 $ sudo vi /etc/modprobe.d/raspi-blacklist.conf
 ````
@@ -55,6 +67,12 @@ Load kernel module
 
 ````bash
 $ sudo modprobe i2c-bcm2708
+````
+
+Make device writable 
+
+````bash
+sudo chmod o+rw /dev/i2c*
 ````
 
 Set correct device for version

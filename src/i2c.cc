@@ -15,7 +15,7 @@ int fd;
 int8_t addr;
 
 void setAddress(int8_t addr) {
-  int result = ioctl(fd, I2C_SLAVE, addr);
+  int result = ioctl(fd, I2C_SLAVE_FORCE, addr);
   if (result == -1) {
     ThrowException(
       Exception::TypeError(String::New("Failed to set address"))
