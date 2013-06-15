@@ -84,6 +84,17 @@ new i2c(address, device: '/dev/i2c-1') // rev 2
 
 ````
 
+## Beaglebone
+
+````bash
+$ opkg update
+$ opkg install python-compile
+$ opkg install python-modules
+````
+
+
+
+
 ## Projects using i2c
 
 - **ADXL345** https://github.com/timbit123/ADXL345 
