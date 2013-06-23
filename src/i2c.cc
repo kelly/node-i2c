@@ -102,7 +102,7 @@ Handle<Value> ReadByte(const Arguments& args) {
 
   int8_t res = i2c_smbus_read_byte(fd);
 
-  if (i2c_smbus_read_byte(fd) == -1) { 
+  if (res == -1) { 
     err = Exception::Error(String::New("Cannot read device"));
   } else {
     data = Integer::New(res);

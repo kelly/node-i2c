@@ -87,13 +87,13 @@ new i2c(address, device: '/dev/i2c-1') // rev 2
 ## Beaglebone
 
 ````bash
+$ ntpdate -b -s -u pool.ntp.org
 $ opkg update
 $ opkg install python-compile
 $ opkg install python-modules
+$ npm config set strict-ssl false
+$ npm install i2c
 ````
-
-
-
 
 ## Projects using i2c
 
