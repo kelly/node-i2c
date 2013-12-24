@@ -15,7 +15,7 @@ class i2c extends EventEmitter
       require('repl').start(
         prompt: "i2c > "
       ).context.wire = @
-      process.stdin.emit 'data', 1 # trigger repl
+      process.stdin.emit 'data', '' # trigger repl
 
     process.on 'exit', => @close()
 
