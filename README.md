@@ -67,6 +67,7 @@ Load kernel module
 
 ````bash
 $ sudo modprobe i2c-bcm2708
+$ sudo modprobe i2c-dev
 ````
 
 Make device writable 
