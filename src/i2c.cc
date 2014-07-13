@@ -133,8 +133,14 @@ Handle<Value> ReadBlock(const Arguments& args) {
   Local<Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
 
   while (fd > 0) {
-    if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
-      err = Exception::Error(String::New("Error reading length of bytes"));
+    if (args[0]->IsNumber()) {
+      if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
+        err = Exception::Error(String::New("Error reading length of bytes"));
+      }
+    } else {
+      if (read(fd, data, len) < 0) {
+        err = Exception::Error(String::New("Error reading length of bytes"));
+      }
     }
 
     memcpy(node::Buffer::Data(buffer), data, len);
