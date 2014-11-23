@@ -14,7 +14,7 @@ $ npm install i2c
 
 var i2c = require('i2c');
 var address = 0x18;
-var wire = new i2c(address, {device: '/dev/i2c-1', debug: true}); // point to your i2c address, debug provides REPL interface
+var wire = new i2c(address, {device: '/dev/i2c-1'}); // point to your i2c address, debug provides REPL interface
 
 wire.scan(function(err, data) {
   // result contains an array of addresses
@@ -67,6 +67,7 @@ Load kernel module
 
 ````bash
 $ sudo modprobe i2c-bcm2708
+$ sudo modprobe i2c-dev
 ````
 
 Make device writable 
@@ -98,10 +99,15 @@ $ npm install i2c
 
 ## Projects using i2c
 
+- **bonescript** https://github.com/jadonk/bonescript/
 - **ADXL345** https://github.com/timbit123/ADXL345 
 - **HMC6343** https://github.com/omcaree/node-hmc6343
+- **LSM303** https://github.com/praneshkmr/node-lsm303
 - **MPU6050** https://github.com/jstapels/mpu6050/
+- **MCP3424** https://github.com/x3itsolutions/mcp3424
 - **blinkm** https://github.com/korevec/blinkm
+- **click boards** https://github.com/TheThingSystem/node-click-boards
+- more: https://www.npmjs.org/browse/depended/i2c
 
 ## Questions?
 
