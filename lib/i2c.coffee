@@ -1,6 +1,7 @@
 _            = require 'underscore'
 wire         = require '../build/Release/i2c'
 EventEmitter = require('events').EventEmitter
+tick         = setImmediate || process.nextTick
 
 class i2c extends EventEmitter
 
@@ -30,34 +31,45 @@ class i2c extends EventEmitter
 
   scan: (callback) ->
     wire.scan (err, data) ->
-      callback err, _.filter data, (num) -> return num >= 0
+      tick ->
+        callback err, _.filter data, (num) -> return num >= 0
 
   setAddress: (address) ->
     wire.setAddress address
     @address = address
 
   open: (device, callback) ->
-    wire.open device, callback
+    wire.open device, (err) ->
+      tick ->
+        callback err
 
   close: ->
     wire.close()
 
   writeByte: (byte, callback) ->
     @setAddress @address
-    wire.writeByte byte, callback
+    wire.writeByte byte, (err) ->
+      tick ->
+        callback err
 
   writeBytes: (cmd, buf, callback) ->
     @setAddress @address
     unless Buffer.isBuffer(buf) then buf = new Buffer(buf)
-    wire.writeBlock cmd, buf, callback
+    wire.writeBlock cmd, buf, (err) ->
+      tick ->
+        callback err
 
   readByte: (callback) ->
     @setAddress @address
-    wire.readByte callback
+    wire.readByte (err, data) ->
+      tick ->
+        callback err, data
 
   readBytes: (cmd, len, callback) ->
     @setAddress @address
-    wire.readBlock cmd, len, null, callback
+    wire.readBlock cmd, len, null, (err, actualBuffer) ->
+      tick ->
+        callback err, actualBuffer
 
   stream: (cmd, len, delay = 100) ->
     @setAddress @address
