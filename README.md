@@ -98,6 +98,7 @@ $ npm install i2c
 
 ## Projects using i2c
 
+- **LSM303** https://github.com/praneshkmr/node-lsm303
 - **ADXL345** https://github.com/timbit123/ADXL345 
 - **HMC6343** https://github.com/omcaree/node-hmc6343
 - **MPU6050** https://github.com/jstapels/mpu6050/
