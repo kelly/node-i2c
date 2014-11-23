@@ -102,6 +102,7 @@ $ npm install i2c
 - **HMC6343** https://github.com/omcaree/node-hmc6343
 - **MPU6050** https://github.com/jstapels/mpu6050/
 - **blinkm** https://github.com/korevec/blinkm
+- **mcp3424** https://github.com/x3itsolutions/mcp3424
 
 ## Questions?
 
