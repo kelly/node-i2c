@@ -100,7 +100,7 @@ Handle<Value> ReadByte(const Arguments& args) {
   Local<Value> data; 
   Local<Value> err = Local<Value>::New(Null());
 
-  int8_t res = i2c_smbus_read_byte(fd);
+  int32_t res = i2c_smbus_read_byte(fd);
 
   if (res == -1) { 
     err = Exception::Error(String::New("Cannot read device"));
