@@ -94,6 +94,36 @@ Handle<Value> Open(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
+Handle<Value> Read(const Arguments& args) {
+  HandleScope scope;
+
+  int len = args[0]->Int32Value();
+
+  Local<Array> data = Array::New();
+
+  char* buf = new char[len];
+  Local<Value> err = Local<Value>::New(Null());
+
+  if (read(fd, buf, len) != len) {
+    err = Exception::Error(String::New("Cannot read from device"));
+  } else {
+    for (int i = 0; i < len; ++i) {
+      data->Set(i, Integer::New(buf[i]));
+    }
+  }
+  delete[] buf;
+
+  if (args[1]->IsFunction()) {
+    const unsigned argc = 2;
+    Local<Function> callback = Local<Function>::Cast(args[1]);
+    Local<Value> argv[argc] = { err, data };
+
+    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+  }
+
+  return scope.Close(Undefined());
+}
+
 Handle<Value> ReadByte(const Arguments& args) {
   HandleScope scope;
   
@@ -156,6 +186,30 @@ Handle<Value> ReadBlock(const Arguments& args) {
   return scope.Close(actualBuffer);
 }
 
+Handle<Value> Write(const Arguments& args) {
+  HandleScope scope;
+
+  Local<Value> buffer = args[0];
+
+  int   len = node::Buffer::Length(buffer->ToObject());
+  char* data = node::Buffer::Data(buffer->ToObject());
+
+  Local<Value> err = Local<Value>::New(Null());
+
+  if (write(fd, (unsigned char*) data, len) != len) {
+    err = Exception::Error(String::New("Cannot write to device"));
+  }
+
+  if (args[1]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(args[1]);
+    Local<Value> argv[argc] = { err };
+
+    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+  }
+
+  return scope.Close(Undefined());
+}
 
 Handle<Value> WriteByte(const Arguments& args) {
   HandleScope scope;
@@ -240,18 +294,23 @@ void Init(Handle<Object> target) {
   target->Set(String::NewSymbol("close"),
     FunctionTemplate::New(Close)->GetFunction());
 
+  target->Set(String::NewSymbol("write"),
+      FunctionTemplate::New(Write)->GetFunction());
+
   target->Set(String::NewSymbol("writeByte"),
       FunctionTemplate::New(WriteByte)->GetFunction());
 
   target->Set(String::NewSymbol("writeBlock"),
       FunctionTemplate::New(WriteBlock)->GetFunction());
 
+  target->Set(String::NewSymbol("read"),
+    FunctionTemplate::New(Read)->GetFunction());
+
   target->Set(String::NewSymbol("readByte"),
     FunctionTemplate::New(ReadByte)->GetFunction());
 
   target->Set(String::NewSymbol("readBlock"),
-    FunctionTemplate::New(ReadBlock)->GetFunction());
-
+    FunctionTemplate::New(ReadBlock)->GetFunction());    
 }
 
 NODE_MODULE(i2c, Init)
