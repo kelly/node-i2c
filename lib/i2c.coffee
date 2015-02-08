@@ -46,6 +46,13 @@ class i2c extends EventEmitter
   close: ->
     wire.close()
 
+  write: (buf, callback) ->
+    @setAddress @address
+    unless Buffer.isBuffer(buf) then buf = new Buffer(buf)
+    wire.write buf (err) ->
+      tick ->
+        callback err
+
   writeByte: (byte, callback) ->
     @setAddress @address
     wire.writeByte byte, (err) ->
@@ -58,6 +65,12 @@ class i2c extends EventEmitter
     wire.writeBlock cmd, buf, (err) ->
       tick ->
         callback err
+
+  read: (len, callback) ->
+    @setAddress @address
+    wire.read len (err, data) ->
+      tick ->
+        callback err, data
 
   readByte: (callback) ->
     @setAddress @address
