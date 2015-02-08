@@ -37,6 +37,15 @@ wire.on('data', function(data) {
 wire.stream(command, length, delay); // continuous stream, delay in ms
 
 
+// plain read/write
+
+wire.write([byte0, byte1], function(err) {});
+
+wire.read(length, function(err, res) {
+  // result contains a buffer of bytes
+});
+
+
 ````
 
 ## Raspberry Pi Setup
