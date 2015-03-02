@@ -15,30 +15,33 @@ int fd;
 int8_t addr;
 
 void setAddress(int8_t addr) {
+  Isolate* isolate = Isolate::GetCurrent();
+
   int result = ioctl(fd, I2C_SLAVE_FORCE, addr);
   if (result == -1) {
-    ThrowException(
-      Exception::TypeError(String::New("Failed to set address"))
+    isolate->ThrowException(
+      Exception::TypeError(String::NewFromUtf8(isolate, "Failed to set address"))
     );
+    return;
   }
 }
 
-Handle<Value> SetAddress(const Arguments& args) {
-  HandleScope scope;
+void SetAddress(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   addr = args[0]->Int32Value();
   setAddress(addr);
-
-  return scope.Close(Undefined());
 }
 
-Handle<Value> Scan(const Arguments& args) {
-  HandleScope scope;
+void Scan(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   int i, res;
   Local<Function> callback = Local<Function>::Cast(args[0]);
-  Local<Array> results(Array::New(128));
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Array> results = Array::New(isolate, 128);
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
 
   for (i = 0; i < 128; i++) {
     setAddress(i);
@@ -50,37 +53,38 @@ Handle<Value> Scan(const Arguments& args) {
     if (res >= 0) {
       res = i;
     }
-    results->Set(i, Integer::New(res));
+    results->Set(i, Integer::New(isolate, res));
   }
 
   setAddress(addr);
 
   const unsigned argc = 2;
   Local<Value> argv[argc] = { err, results };
-  callback->Call(Context::GetCurrent()->Global(), argc, argv);
+  callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
 
-  return scope.Close(results);
+  args.GetReturnValue().Set(results);
 }
 
-Handle<Value> Close(const Arguments& args) {
-  HandleScope scope;
+void Close(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   if (fd > 0) {
     close(fd);
   }
-  return scope.Close(Undefined());
 }
 
-Handle<Value> Open(const Arguments& args) {
-  HandleScope scope;
+void Open(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   String::Utf8Value device(args[0]);
 
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
 
   fd = open(*device, O_RDWR);
   if (fd == -1) {
-    err = Exception::Error(String::New("Failed to open I2C device"));
+    err = Exception::Error(String::NewFromUtf8(isolate, "Failed to open I2C device"));
   }
 
   if (args[1]->IsFunction()) {
@@ -88,27 +92,26 @@ Handle<Value> Open(const Arguments& args) {
     Local<Function> callback = Local<Function>::Cast(args[1]);
     Local<Value> argv[argc] = { err };
 
-    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+    callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
-
-  return scope.Close(Undefined());
 }
 
-Handle<Value> Read(const Arguments& args) {
-  HandleScope scope;
+void Read(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   int len = args[0]->Int32Value();
 
-  Local<Array> data = Array::New();
+  Local<Array> data = Array::New(isolate);
 
   char* buf = new char[len];
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
 
   if (read(fd, buf, len) != len) {
-    err = Exception::Error(String::New("Cannot read from device"));
+    err = Exception::Error(String::NewFromUtf8(isolate, "Cannot read from device"));
   } else {
     for (int i = 0; i < len; ++i) {
-      data->Set(i, Integer::New(buf[i]));
+      data->Set(i, Integer::New(isolate, buf[i]));
     }
   }
   delete[] buf;
@@ -118,24 +121,23 @@ Handle<Value> Read(const Arguments& args) {
     Local<Function> callback = Local<Function>::Cast(args[1]);
     Local<Value> argv[argc] = { err, data };
 
-    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+    callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
-
-  return scope.Close(Undefined());
 }
 
-Handle<Value> ReadByte(const Arguments& args) {
-  HandleScope scope;
+void ReadByte(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
   
   Local<Value> data; 
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
 
   int32_t res = i2c_smbus_read_byte(fd);
 
   if (res == -1) { 
-    err = Exception::Error(String::New("Cannot read device"));
+    err = Exception::Error(String::NewFromUtf8(isolate, "Cannot read device"));
   } else {
-    data = Integer::New(res);
+    data = Integer::New(isolate, res);
   }
 
   if (args[0]->IsFunction()) {
@@ -143,28 +145,25 @@ Handle<Value> ReadByte(const Arguments& args) {
     Local<Function> callback = Local<Function>::Cast(args[0]);
     Local<Value> argv[argc] = { err, data };
 
-    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+    callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
-  return scope.Close(data);
+
+  args.GetReturnValue().Set(data);
 }
 
-Handle<Value> ReadBlock(const Arguments& args) {
-  HandleScope scope;
+void ReadBlock(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   int8_t cmd = args[0]->Int32Value();
   int32_t len = args[1]->Int32Value();
   uint8_t data[len]; 
-  Local<Value> err = Local<Value>::New(Null());
-  node::Buffer *buffer =  node::Buffer::New(len);
-
-  Local<Object> globalObj = Context::GetCurrent()->Global();
-  Local<Function> bufferConstructor = Local<Function>::Cast(globalObj->Get(String::New("Buffer")));
-  Handle<Value> constructorArgs[3] = { buffer->handle_, v8::Integer::New(len), v8::Integer::New(0) };
-  Local<Object> actualBuffer = bufferConstructor->NewInstance(3, constructorArgs);
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
+  Local<Object> buffer = node::Buffer::New(len);
 
   while (fd > 0) {
     if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
-      err = Exception::Error(String::New("Error reading length of bytes"));
+      err = Exception::Error(String::NewFromUtf8(isolate, "Error reading length of bytes"));
     }
 
     memcpy(node::Buffer::Data(buffer), data, len);
@@ -172,8 +171,8 @@ Handle<Value> ReadBlock(const Arguments& args) {
     if (args[3]->IsFunction()) {
       const unsigned argc = 2;
       Local<Function> callback = Local<Function>::Cast(args[3]);
-      Local<Value> argv[argc] = { err, actualBuffer };
-      callback->Call(Context::GetCurrent()->Global(), argc, argv);
+      Local<Value> argv[argc] = { err, buffer };
+      callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
     }
  
     if (args[2]->IsNumber()) {
@@ -183,21 +182,23 @@ Handle<Value> ReadBlock(const Arguments& args) {
       break;
     }
   }
-  return scope.Close(actualBuffer);
+
+  args.GetReturnValue().Set(buffer);
 }
 
-Handle<Value> Write(const Arguments& args) {
-  HandleScope scope;
+void Write(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   Local<Value> buffer = args[0];
 
   int   len = node::Buffer::Length(buffer->ToObject());
   char* data = node::Buffer::Data(buffer->ToObject());
 
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
 
   if (write(fd, (unsigned char*) data, len) != len) {
-    err = Exception::Error(String::New("Cannot write to device"));
+    err = Exception::Error(String::NewFromUtf8(isolate, "Cannot write to device"));
   }
 
   if (args[1]->IsFunction()) {
@@ -205,20 +206,19 @@ Handle<Value> Write(const Arguments& args) {
     Local<Function> callback = Local<Function>::Cast(args[1]);
     Local<Value> argv[argc] = { err };
 
-    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+    callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
-
-  return scope.Close(Undefined());
 }
 
-Handle<Value> WriteByte(const Arguments& args) {
-  HandleScope scope;
+void WriteByte(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   int8_t byte = args[0]->Int32Value();
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
 
   if (i2c_smbus_write_byte(fd, byte) == -1) {
-    err = Exception::Error(String::New("Cannot write to device"));
+    err = Exception::Error(String::NewFromUtf8(isolate, "Cannot write to device"));
   }
 
   if (args[1]->IsFunction()) {
@@ -226,14 +226,13 @@ Handle<Value> WriteByte(const Arguments& args) {
     Local<Function> callback = Local<Function>::Cast(args[1]);
     Local<Value> argv[argc] = { err };
 
-    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+    callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
-
-  return scope.Close(Undefined());
 }
 
-Handle<Value> WriteBlock(const Arguments& args) {
-  HandleScope scope;
+void WriteBlock(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   Local<Value> buffer = args[1];
 
@@ -241,10 +240,10 @@ Handle<Value> WriteBlock(const Arguments& args) {
   int   len = node::Buffer::Length(buffer->ToObject());
   char* data = node::Buffer::Data(buffer->ToObject());
 
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
 
   if (i2c_smbus_write_i2c_block_data(fd, cmd, len, (unsigned char*) data) == -1) {
-    err = Exception::Error(String::New("Cannot write to device"));
+    err = Exception::Error(String::NewFromUtf8(isolate, "Cannot write to device"));
   }
 
   if (args[2]->IsFunction()) {
@@ -252,22 +251,21 @@ Handle<Value> WriteBlock(const Arguments& args) {
     Local<Function> callback = Local<Function>::Cast(args[2]);
     Local<Value> argv[argc] = { err };
 
-    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+    callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
-
-  return scope.Close(Undefined());
 }
 
-Handle<Value> WriteWord(const Arguments& args) {
-  HandleScope scope;
+void WriteWord(const FunctionCallbackInfo<Value>& args) {
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
   
   int8_t cmd = args[0]->Int32Value();
   int16_t word = args[1]->Int32Value();
 
-  Local<Value> err = Local<Value>::New(Null());
+  Local<Value> err = Local<Value>::New(isolate, Null(isolate));
   
   if (i2c_smbus_write_word_data(fd, cmd, word) == -1) {
-    err = Exception::Error(String::New("Cannot write to device"));
+    err = Exception::Error(String::NewFromUtf8(isolate, "Cannot write to device"));
   }
 
   if (args[2]->IsFunction()) {
@@ -275,42 +273,21 @@ Handle<Value> WriteWord(const Arguments& args) {
     Local<Function> callback = Local<Function>::Cast(args[2]);
     Local<Value> argv[argc] = { err };
 
-    callback->Call(Context::GetCurrent()->Global(), argc, argv);
+    callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
   }
-
-  return scope.Close(Undefined());
 }
 
-void Init(Handle<Object> target) {
-  target->Set(String::NewSymbol("scan"),
-    FunctionTemplate::New(Scan)->GetFunction());
-
-  target->Set(String::NewSymbol("setAddress"),
-    FunctionTemplate::New(SetAddress)->GetFunction());
-
-  target->Set(String::NewSymbol("open"),
-    FunctionTemplate::New(Open)->GetFunction());
-
-  target->Set(String::NewSymbol("close"),
-    FunctionTemplate::New(Close)->GetFunction());
-
-  target->Set(String::NewSymbol("write"),
-      FunctionTemplate::New(Write)->GetFunction());
-
-  target->Set(String::NewSymbol("writeByte"),
-      FunctionTemplate::New(WriteByte)->GetFunction());
-
-  target->Set(String::NewSymbol("writeBlock"),
-      FunctionTemplate::New(WriteBlock)->GetFunction());
-
-  target->Set(String::NewSymbol("read"),
-    FunctionTemplate::New(Read)->GetFunction());
-
-  target->Set(String::NewSymbol("readByte"),
-    FunctionTemplate::New(ReadByte)->GetFunction());
-
-  target->Set(String::NewSymbol("readBlock"),
-    FunctionTemplate::New(ReadBlock)->GetFunction());    
+void Init(Handle<Object> exports) {
+  NODE_SET_METHOD(exports, "setAddress", SetAddress);
+  NODE_SET_METHOD(exports, "scan", Scan);
+  NODE_SET_METHOD(exports, "open", Open);
+  NODE_SET_METHOD(exports, "close", Close);
+  NODE_SET_METHOD(exports, "write", Write);
+  NODE_SET_METHOD(exports, "writeByte", WriteByte);
+  NODE_SET_METHOD(exports, "writeBlock", WriteBlock);
+  NODE_SET_METHOD(exports, "read", Read);
+  NODE_SET_METHOD(exports, "readByte", ReadByte);
+  NODE_SET_METHOD(exports, "readBlock", ReadBlock);
 }
 
 NODE_MODULE(i2c, Init)
