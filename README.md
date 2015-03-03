@@ -106,6 +106,12 @@ $ npm config set strict-ssl false
 $ npm install i2c
 ````
 
+## Node 0.11 and under
+
+````bash
+npm install i2c@0.1.8
+````
+
 ## Projects using i2c
 
 - **bonescript** https://github.com/jadonk/bonescript/
