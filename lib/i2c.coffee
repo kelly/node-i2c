@@ -24,7 +24,7 @@ class i2c extends EventEmitter
       @history.push data
 
     @on 'error', (err) ->
-      console.log "Error: #{error}"
+      console.log "Error: #{err}"
 
     @open @options.device, (err) =>
       unless err then @setAddress @address
