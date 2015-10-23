@@ -159,19 +159,19 @@ void ReadBlock(const FunctionCallbackInfo<Value>& args) {
   int32_t len = args[1]->Int32Value();
   uint8_t data[len]; 
   Local<Value> err = Local<Value>::New(isolate, Null(isolate));
-  Local<Object> buffer = node::Buffer::New(len);
+  MaybeLocal<Object> buffer = node::Buffer::New(isolate, len);
 
   while (fd > 0) {
     if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
       err = Exception::Error(String::NewFromUtf8(isolate, "Error reading length of bytes"));
     }
 
-    memcpy(node::Buffer::Data(buffer), data, len);
+    memcpy(node::Buffer::Data(buffer.ToLocalChecked()), data, len);
 
     if (args[3]->IsFunction()) {
       const unsigned argc = 2;
       Local<Function> callback = Local<Function>::Cast(args[3]);
-      Local<Value> argv[argc] = { err, buffer };
+      Local<Value> argv[argc] = { err, buffer.ToLocalChecked() };
       callback->Call(isolate->GetCurrentContext()->Global(), argc, argv);
     }
  
@@ -183,7 +183,7 @@ void ReadBlock(const FunctionCallbackInfo<Value>& args) {
     }
   }
 
-  args.GetReturnValue().Set(buffer);
+  args.GetReturnValue().Set(buffer.ToLocalChecked());
 }
 
 void Write(const FunctionCallbackInfo<Value>& args) {
