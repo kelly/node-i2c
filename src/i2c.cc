@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <nan.h>
 #include "i2c-dev.h"
 
 using namespace v8;
@@ -159,7 +160,10 @@ void ReadBlock(const FunctionCallbackInfo<Value>& args) {
   int32_t len = args[1]->Int32Value();
   uint8_t data[len]; 
   Local<Value> err = Local<Value>::New(isolate, Null(isolate));
-  Local<Object> buffer = node::Buffer::New(len);
+  // Local<Object> buffer = node::Buffer::New(len);
+  //new version for all node versions
+  Local<Object> buffer = Nan::NewBuffer(len).ToLocalChecked();  //todo some error checking here as the devs intended
+
 
   while (fd > 0) {
     if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
