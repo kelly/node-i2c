@@ -8,7 +8,7 @@
     "type": "git",
     "url": "http://github.com/korevec/node-i2c.git"
   },
-  "license": "BSD",
+  "license": "BSD-3-Clause-Attribution",
   "dependencies": {
     "bindings": "1.2.1",
     "underscore": "1.8.2",
