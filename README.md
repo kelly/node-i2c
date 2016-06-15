@@ -85,6 +85,16 @@ Make device writable
 sudo chmod o+rw /dev/i2c*
 ````
 
+Install gcc 4.8 (required for Nan)
+
+````bash
+sudo apt-get install gcc-4.8 g++-4.8
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.6
+sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
+sudo update-alternatives --config gcc 
+
+````
+
 Set correct device for version
 
 ```javascript
@@ -123,6 +133,12 @@ npm install i2c@0.1.8
 - **blinkm** https://github.com/korevec/blinkm
 - **click boards** https://github.com/TheThingSystem/node-click-boards
 - more: https://www.npmjs.org/browse/depended/i2c
+
+
+## Contributors
+
+Thanks to @alphacharlie for Nan rewrite!
+
 
 ## Questions?
 
