@@ -1,5 +1,3 @@
-require('coffee-script');
-require('coffee-script/register');
-var i2c = require('./lib/i2c');
+var i2c = require('./build/i2c');
 
 module.exports = i2c;
