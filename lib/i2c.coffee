@@ -7,7 +7,7 @@ class i2c extends EventEmitter
 
   history: []
 
-  constructor: (@address, @options = {}) ->
+  constructor: (@address, @options = {}, callback) ->
     _.defaults @options,
       debug: false
       device: "/dev/i2c-1"
@@ -27,7 +27,11 @@ class i2c extends EventEmitter
       console.log "Error: #{err}"
 
     @open @options.device, (err) =>
-      unless err then @setAddress @address
+        if err
+            if callback then callback(err)
+        else
+            @setAddress @address
+            if callback then callback()
 
   scan: (callback) ->
     wire.scan (err, data) ->
