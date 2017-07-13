@@ -148,6 +148,32 @@ void ReadByte(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   info.GetReturnValue().Set(data);
 }
 
+void ReadByteData(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  Local<Value> data;
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+
+  int32_t position = info[0]->Int32Value();
+
+  int32_t res = i2c_smbus_read_byte_data(fd, position);
+
+  if (res == -1) {
+    err = Nan::Error(Nan::New("Cannot read device").ToLocalChecked());
+  } else {
+    data = Nan::New<Integer>(res);
+  }
+
+  if (info[1]->IsFunction()) {
+    const unsigned argc = 2;
+    Local<Function> callback = Local<Function>::Cast(info[1]);
+    Local<Value> argv[argc] = { err, data };
+    Nan::MakeCallback(Nan::GetCurrentContext()->Global(), callback, argc, argv);
+  }
+
+  info.GetReturnValue().Set(data);
+}
+
 void ReadBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
@@ -287,6 +313,8 @@ void Init(Handle<Object> exports) {
                Nan::New<v8::FunctionTemplate>(Read)->GetFunction());
   exports->Set(Nan::New("readByte").ToLocalChecked(),
                Nan::New<v8::FunctionTemplate>(ReadByte)->GetFunction());
+  exports->Set(Nan::New("readByteData").ToLocalChecked(),
+               Nan::New<v8::FunctionTemplate>(ReadByteData)->GetFunction());
   exports->Set(Nan::New("readBlock").ToLocalChecked(),
                Nan::New<v8::FunctionTemplate>(ReadBlock)->GetFunction());
 

@@ -78,6 +78,12 @@ class i2c extends EventEmitter
       tick ->
         callback err, data
 
+  readByteData: (position, callback) ->
+    @setAddress @address
+    wire.readByteData position, (err, data) ->
+      tick ->
+        callback err, data
+
   readBytes: (cmd, len, callback) ->
     @setAddress @address
     wire.readBlock cmd, len, null, (err, actualBuffer) ->
