@@ -13,8 +13,8 @@
     "bindings": "1.2.1",
     "underscore": "1.8.2",
     "coffee-script": "1.9.1",
-    "repl":"0.1.3",
-    "nan": "~2.3.5"
+    "repl": "0.1.3",
+    "nan": "~2.14.0"
   },
   "engine": "node >= 0.12.0"
 }
