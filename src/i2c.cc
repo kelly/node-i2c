@@ -35,7 +35,7 @@ void SetAddress(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     Nan::ThrowTypeError("addr must be an int");
     return;
   }
-  addr = info[0]->Int32Value();
+  addr = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
   setAddress(addr);
 }
 
@@ -57,7 +57,11 @@ void Scan(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     if (res >= 0) {
       res = i;
     }
-    results->Set(i, Nan::New<Integer>(res));
+    results->Set(
+      Nan::GetCurrentContext(),
+      i,
+      Nan::New<Integer>(res)
+    );
   }
 
   setAddress(addr);
@@ -81,7 +85,7 @@ void Close(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void Open(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
-  String::Utf8Value device(info[0]);
+  Nan::Utf8String device(info[0]);
   Local<Value> err = Nan::New<Value>(Nan::Null());
 
   fd = open(*device, O_RDWR);
@@ -100,7 +104,7 @@ void Open(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void Read(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
-  int len = info[0]->Int32Value();
+  int len = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
 
   Local<Array> data = Nan::New<Array>();
 
@@ -111,7 +115,7 @@ void Read(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     err = Nan::Error(Nan::New("Cannot read from device").ToLocalChecked());
   } else {
     for (int i = 0; i < len; ++i) {
-      data->Set(i, Nan::New<Integer>(buf[i]));
+      data->Set(Nan::GetCurrentContext(), i, Nan::New<Integer>(buf[i]));
     }
   }
   delete[] buf;
@@ -151,8 +155,8 @@ void ReadByte(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void ReadBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
-  int8_t cmd = info[0]->Int32Value();
-  int32_t len = info[1]->Int32Value();
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  int32_t len = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
   uint8_t data[len]; 
   Local<Value> err = Nan::New<Value>(Nan::Null());
   // Local<Object> buffer = node::Buffer::New(len);
@@ -175,7 +179,7 @@ void ReadBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     }
  
     if (info[2]->IsNumber()) {
-      int32_t delay = info[2]->Int32Value();
+      int32_t delay = info[2]->Int32Value(Nan::GetCurrentContext()).FromJust();
       usleep(delay * 1000);
     } else {
       break;
@@ -188,10 +192,11 @@ void ReadBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void Write(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
-  Local<Value> buffer = info[0];
+//  v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
+  auto bufferObj = info[0]->ToObject(Nan::GetCurrentContext()).ToLocalChecked();
 
-  int   len = node::Buffer::Length(buffer->ToObject());
-  char* data = node::Buffer::Data(buffer->ToObject());
+  int   len = node::Buffer::Length(bufferObj);
+  char* data = node::Buffer::Data(bufferObj);
 
   Local<Value> err = Nan::New<Value>(Nan::Null());
 
@@ -210,7 +215,7 @@ void Write(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void WriteByte(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
-  int8_t byte = info[0]->Int32Value();
+  int8_t byte = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
   Local<Value> err = Nan::New<Value>(Nan::Null());
 
   if (i2c_smbus_write_byte(fd, byte) == -1) {
@@ -228,10 +233,12 @@ void WriteByte(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void WriteBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
-  Local<Value> buffer = info[1];
-  int8_t cmd = info[0]->Int32Value();
-  int   len = node::Buffer::Length(buffer->ToObject());
-  char* data = node::Buffer::Data(buffer->ToObject());
+  v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
+  auto bufferObj = info[1]->ToObject(context).ToLocalChecked();
+
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  int   len = node::Buffer::Length(bufferObj);
+  char* data = node::Buffer::Data(bufferObj);
 
   Local<Value> err = Nan::New<Value>(Nan::Null());
 
@@ -250,8 +257,8 @@ void WriteBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void WriteWord(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
   
-  int8_t cmd = info[0]->Int32Value();
-  int16_t word = info[1]->Int32Value();
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  int16_t word = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
 
   Local<Value> err = Nan::New<Value>(Nan::Null());
   
@@ -267,28 +274,58 @@ void WriteWord(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 }
 
-void Init(Handle<Object> exports) {
+void Init(Local<Object> exports) {
 
-  exports->Set(Nan::New("setAddress").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(SetAddress)->GetFunction());
-  exports->Set(Nan::New("scan").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(Scan)->GetFunction());
-  exports->Set(Nan::New("open").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(Open)->GetFunction());
-  exports->Set(Nan::New("close").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(Close)->GetFunction());
-  exports->Set(Nan::New("write").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(Write)->GetFunction());
-  exports->Set(Nan::New("writeByte").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(WriteByte)->GetFunction());
-  exports->Set(Nan::New("writeBlock").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(WriteBlock)->GetFunction());
-  exports->Set(Nan::New("read").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(Read)->GetFunction());
-  exports->Set(Nan::New("readByte").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(ReadByte)->GetFunction());
-  exports->Set(Nan::New("readBlock").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(ReadBlock)->GetFunction());
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("setAddress").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(SetAddress)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("scan").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(Scan)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("open").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(Open)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("close").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(Close)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("write").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(Write)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("writeByte").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(WriteByte)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("writeBlock").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(WriteBlock)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("read").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(Read)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("readByte").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(ReadByte)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
+  exports->Set(
+    Nan::GetCurrentContext(),
+    Nan::New("readBlock").ToLocalChecked(),
+    Nan::New<v8::FunctionTemplate>(ReadBlock)->GetFunction(Nan::GetCurrentContext()).FromMaybe(v8::Local<v8::Function>())
+  );
 
 }
 
