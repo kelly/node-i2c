@@ -132,6 +132,7 @@ npm install i2c@0.1.8
 - **MCP3424** https://github.com/x3itsolutions/mcp3424
 - **blinkm** https://github.com/korevec/blinkm
 - **click boards** https://github.com/TheThingSystem/node-click-boards
+- **piglow** https://github.com/zaphod1984/node-piglow
 - more: https://www.npmjs.org/browse/depended/i2c
 
 
