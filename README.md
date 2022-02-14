@@ -137,7 +137,7 @@ npm install i2c@0.1.8
 
 ## Contributors
 
-Thanks to @alphacharlie for Nan rewrite!
+Thanks to @alphacharlie for Nan rewrite, and @J-Cat for Node 14 updates.
 
 
 ## Questions?
