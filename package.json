@@ -1,6 +1,6 @@
 {
   "name": "i2c",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Native bindings for i2c-dev. Plays well with Raspberry Pi and BeagleBone.",
   "main": "main.js",
   "author": "Kelly Korevec",
@@ -11,10 +11,10 @@
   "license": "BSD-3-Clause-Attribution",
   "dependencies": {
     "bindings": "1.5.0",
-    "underscore": "1.11.0",
     "coffeescript": "2.5.1",
-    "repl":"0.1.3",
-    "nan": "~2.14.0"
+    "nan": "~2.14.0",
+    "repl": "0.1.3",
+    "underscore": "^1.13.2"
   },
   "engine": "node >= 0.12.0"
 }
