@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <vector>
 #include "i2c-dev.h"
 
 
@@ -153,21 +154,19 @@ void ReadBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
   int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
   int32_t len = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
-  // VLA (Variable Length Array) is supported by GCC/Clang but not standard C++.
-  // Better use heap allocation or std::vector for portability/safety with larger lengths.
-  // But for now keeping it as is since it worked.
-  uint8_t data[len]; 
+
+  std::vector<uint8_t> data(len);
   Local<Value> err = Nan::New<Value>(Nan::Null());
 
   Local<Object> buffer = Nan::NewBuffer(len).ToLocalChecked();
 
 
   while (fd > 0) {
-    if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data) != len) {
+    if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data.data()) != len) {
       err = Nan::Error(Nan::New("Error reading length of bytes").ToLocalChecked());
     }
 
-    memcpy(node::Buffer::Data(buffer), data, len);
+    memcpy(node::Buffer::Data(buffer), data.data(), len);
 
     if (info[3]->IsFunction()) {
       const unsigned argc = 2;

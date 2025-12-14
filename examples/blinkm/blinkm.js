@@ -1,21 +1,20 @@
-var Wire = require('../../main');
-var _ = require('underscore');
+const Wire = require('../../main');
 
 // BlinkM http://thingm.com/products/blinkm
 // firmware http://code.google.com/p/codalyze/wiki/CyzRgb
 
-var TO_RGB        = 0x6e;
-var GET_RGB       = 0x67;
-var FADE_TO_RGB   = 0x63;
-var FADE_TO_HSB   = 0x68;
-var GET_ADDRESS   = 0x61;
-var SET_ADDRESS   = 0x41;
-var SET_FADE      = 0x66;
-var GET_VERSION   = 0x5a;
-var WRITE_SCRIPT  = 0x57;
-var READ_SCRIPT   = 0x52;
-var PLAY_SCRIPT   = 0x70;
-var STOP_SCRIPT   = 0x0f;
+const TO_RGB        = 0x6e;
+const GET_RGB       = 0x67;
+const FADE_TO_RGB   = 0x63;
+const FADE_TO_HSB   = 0x68;
+const GET_ADDRESS   = 0x61;
+const SET_ADDRESS   = 0x41;
+const SET_FADE      = 0x66;
+const GET_VERSION   = 0x5a;
+const WRITE_SCRIPT  = 0x57;
+const READ_SCRIPT   = 0x52;
+const PLAY_SCRIPT   = 0x70;
+const STOP_SCRIPT   = 0x0f;
 
 class Pixel {
 

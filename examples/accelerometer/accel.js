@@ -1,17 +1,17 @@
-var Wire = require('../../main');
+const Wire = require('../../main');
 
 // for AK8975
 // info: https://github.com/jrowberg/i2cdevlib/blob/master/Arduino/AK8975/AK8975.cpp
 // http://stackoverflow.com/questions/4768933/read-two-bytes-into-an-integer
 
-var RANGE_BWIDTH      = 0x14;
-var RANGE_BIT         = 0x04;
-var RANGE_LENGTH      = 0x02;
-var RANGE_2G          = 0x00;
-var BANDWIDTH_BIT     = 0x02;
-var BANDWIDTH_LENGTH  = 0x03;
-var BW_25HZ           = 0x00;
-var GET_ID            = 0x00;
+const RANGE_BWIDTH      = 0x14;
+const RANGE_BIT         = 0x04;
+const RANGE_LENGTH      = 0x02;
+const RANGE_2G          = 0x00;
+const BANDWIDTH_BIT     = 0x02;
+const BANDWIDTH_LENGTH  = 0x03;
+const BW_25HZ           = 0x00;
+const GET_ID            = 0x00;
 
 class Accelerometer {
 
@@ -53,7 +53,7 @@ class Accelerometer {
     setTimeout(() => {
       this.wire.readBytes(0x03, 6, (err, buffer) => {
         if (err) return console.error(err);
-        var pos = {
+        const pos = {
           x: ((buffer[1]) << 8) | buffer[0],
           y: ((buffer[3]) << 8) | buffer[2],
           z: ((buffer[5]) << 8) | buffer[4]
@@ -68,5 +68,5 @@ class Accelerometer {
   }
 }
 
-var accel = new Accelerometer(56);
+const accel = new Accelerometer(56);
 accel.getHeading();

@@ -18,8 +18,3 @@ nan@^2.24.0:
   version "2.24.0"
   resolved "https://registry.npmjs.org/nan/-/nan-2.24.0.tgz"
   integrity sha512-Vpf9qnVW1RaDkoNKFUvfxqAbtI8ncb8OJlqZ9wwpXzWPEsvsB1nvdUi6oYrHIkQ1Y/tMDnr1h4nczS0VB9Xykg==
-
-underscore@^1.13.7:
-  version "1.13.7"
-  resolved "https://registry.npmjs.org/underscore/-/underscore-1.13.7.tgz"
-  integrity sha512-GMXzWtsc57XAtguZgaQViUOzs0KTkk8ojr3/xAxXLITqf/3EMwxC0inyETfDFjH/Krbhuep0HNbbjI9i/q3F3g==
