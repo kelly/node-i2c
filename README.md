@@ -1,6 +1,12 @@
 # i2c
 
+[![GitHub forks](https://img.shields.io/github/forks/kelly/node-i2c.svg?style=social&label=Fork&maxAge=2592000)](https://GitHub.com/kelly/node-i2c/network/)
+[![NPM](https://img.shields.io/npm/v/i2c.svg)](https://www.npmjs.com/package/i2c)
+
 Bindings for i2c-dev. Plays well with Raspberry Pi and Beaglebone.
+
+
+[![NPM](https://nodei.co/npm/i2c.png)](https://npmjs.org/package/i2c)
 
 ## Install
 
