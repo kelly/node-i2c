@@ -4,109 +4,115 @@ Bindings for i2c-dev. Plays well with Raspberry Pi and Beaglebone.
 
 ## Install
 
-````bash
+```bash
 $ npm install i2c
-````
+```
 
 ## Usage
 
 ```javascript
+const i2c = require('i2c');
+const address = 0x18;
+const wire = new i2c(address, { device: '/dev/i2c-1' });
 
-var i2c = require('i2c');
-var address = 0x18;
-var wire = new i2c(address, {device: '/dev/i2c-1'}); // point to your i2c address, debug provides REPL interface
+(async () => {
+  try {
+    // Scan for devices
+    const devices = await wire.scan();
+    console.log('Found devices:', devices);
 
-wire.scan(function(err, data) {
-  // result contains an array of addresses
-});
+    // Write a byte
+    await wire.writeByte(0x80);
+    console.log('Wrote 0x80');
 
-wire.writeByte(byte, function(err) {});
+    // Write a block of bytes
+    await wire.writeBytes(0x01, Buffer.from([0x01, 0x02]));
+    console.log('Wrote [0x01, 0x02]');
 
-wire.writeBytes(command, [byte0, byte1], function(err) {});
+    // Read a byte
+    const temp = await wire.readByte();
+    console.log('Read byte:', temp);
 
-wire.readByte(function(err, res) { // result is single byte })
+    // Read a block of bytes
+    const data = await wire.readBytes(0x02, 2);
+    console.log('Read bytes:', data);
 
-wire.readBytes(command, length, function(err, res) {
-  // result contains a buffer of bytes
-});
+    // Plain read/write
+    await wire.write(Buffer.from([0x03, 0x04]));
+    const buffer = await wire.read(2);
+    console.log('Read buffer:', buffer);
 
-wire.on('data', function(data) {
+    // Close the connection
+    await wire.close();
+    console.log('Closed connection');
+  } catch (err) {
+    console.error('Error:', err);
+  }
+})();
+
+// Stream is event-based
+wire.on('data', (data) => {
   // result for continuous stream contains data buffer, address, length, timestamp
 });
 
-wire.stream(command, length, delay); // continuous stream, delay in ms
-
-
-// plain read/write
-
-wire.write([byte0, byte1], function(err) {});
-
-wire.read(length, function(err, res) {
-  // result contains a buffer of bytes
-});
-
-
-````
+wire.stream(0x05, 2, 100); // continuous stream, delay in ms
+```
 
 ## Raspberry Pi Setup
 
-
-````bash
+```bash
 $ sudo vi /etc/modules
-````
+```
 
-Add these two lines
+Add these two lines:
 
-````bash
+```
 i2c-bcm2708 
 i2c-dev
-````
+```
 
-````bash
+```bash
 $ sudo vi /etc/modprobe.d/raspi-blacklist.conf
-````
+```
 
-Comment out blacklist i2c-bcm2708
+Comment out blacklist i2c-bcm2c708:
 
-````
+```
 #blacklist i2c-bcm2708
-````
+```
 
-Load kernel module
+Load kernel module:
 
-````bash
+```bash
 $ sudo modprobe i2c-bcm2708
 $ sudo modprobe i2c-dev
-````
+```
 
-Make device writable 
+Make device writable:
 
-````bash
+```bash
 sudo chmod o+rw /dev/i2c*
-````
+```
 
-Install gcc 4.8 (required for Nan)
+Install gcc 4.8 (required for Nan):
 
-````bash
+```bash
 sudo apt-get install gcc-4.8 g++-4.8
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.6
 sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
 sudo update-alternatives --config gcc 
+```
 
-````
-
-Set correct device for version
+Set correct device for version:
 
 ```javascript
-
-new i2c(address, device: '/dev/i2c-0') // rev 1
-new i2c(address, device: '/dev/i2c-1') // rev 2
-
-````
+new i2c(address, { device: '/dev/i2c-0' }); // rev 1
+new i2c(address, { device: '/dev/i2c-1' }); // rev 2
+```
 
 ## Beaglebone
 
-````bash
+```bash
 $ ntpdate -b -s -u pool.ntp.org
 $ opkg update
 $ opkg install python-compile
@@ -114,13 +120,7 @@ $ opkg install python-modules
 $ opkg install python-misc
 $ npm config set strict-ssl false
 $ npm install i2c
-````
-
-## Node 0.11 and under
-
-````bash
-npm install i2c@0.1.8
-````
+```
 
 ## Projects using i2c
 
@@ -134,11 +134,9 @@ npm install i2c@0.1.8
 - **click boards** https://github.com/TheThingSystem/node-click-boards
 - more: https://www.npmjs.org/browse/depended/i2c
 
-
 ## Contributors
 
 Thanks to @alphacharlie for Nan rewrite, and @J-Cat for Node 14 updates.
-
 
 ## Questions?
 
