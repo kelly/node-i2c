@@ -270,6 +270,175 @@ void WriteWord(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 }
 
+void ReadWord(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  Local<Value> data;
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+
+  int32_t res = i2c_smbus_read_word_data(fd, cmd);
+
+  if (res == -1) {
+    err = Nan::Error(Nan::New("Cannot read device").ToLocalChecked());
+  } else {
+    data = Nan::New<Integer>(res);
+  }
+
+  if (info[1]->IsFunction()) {
+    const unsigned argc = 2;
+    Local<Function> callback = Local<Function>::Cast(info[1]);
+    Local<Value> argv[argc] = { err, data };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
+
+  info.GetReturnValue().Set(data);
+}
+
+void ReadProcessCall(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  int16_t word = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  Local<Value> data;
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+
+  int32_t res = i2c_smbus_process_call(fd, cmd, word);
+
+  if (res == -1) {
+    err = Nan::Error(Nan::New("Cannot read device").ToLocalChecked());
+  } else {
+    data = Nan::New<Integer>(res);
+  }
+
+  if (info[2]->IsFunction()) {
+    const unsigned argc = 2;
+    Local<Function> callback = Local<Function>::Cast(info[2]);
+    Local<Value> argv[argc] = { err, data };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
+
+  info.GetReturnValue().Set(data);
+}
+
+void WriteQuick(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  int8_t bit = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+
+  if (i2c_smbus_write_quick(fd, bit) == -1) {
+    err = Nan::Error(Nan::New("Cannot write to device").ToLocalChecked());
+  }
+
+  if (info[1]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(info[1]);
+    Local<Value> argv[argc] = { err };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
+}
+
+void ReadByteData(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  Local<Value> data;
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+
+  int32_t res = i2c_smbus_read_byte_data(fd, cmd);
+
+  if (res == -1) {
+    err = Nan::Error(Nan::New("Cannot read device").ToLocalChecked());
+  } else {
+    data = Nan::New<Integer>(res);
+  }
+
+  if (info[1]->IsFunction()) {
+    const unsigned argc = 2;
+    Local<Function> callback = Local<Function>::Cast(info[1]);
+    Local<Value> argv[argc] = { err, data };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
+
+  info.GetReturnValue().Set(data);
+}
+
+void WriteByteData(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  int8_t byte = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+
+  if (i2c_smbus_write_byte_data(fd, cmd, byte) == -1) {
+    err = Nan::Error(Nan::New("Cannot write to device").ToLocalChecked());
+  }
+
+  if (info[2]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(info[2]);
+    Local<Value> argv[argc] = { err };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
+}
+
+void ReadBlockData(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  int32_t len = 32; // Max length for smbus block data
+  std::vector<uint8_t> data(len);
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+  Local<Object> buffer;
+
+  int32_t res = i2c_smbus_read_block_data(fd, cmd, data.data());
+
+  if (res < 0) {
+    err = Nan::Error(Nan::New("Error reading block data").ToLocalChecked());
+  } else {
+    len = res;
+    buffer = Nan::NewBuffer(len).ToLocalChecked();
+    memcpy(node::Buffer::Data(buffer), data.data(), len);
+  }
+
+  if (info[1]->IsFunction()) {
+    const unsigned argc = 2;
+    Local<Function> callback = Local<Function>::Cast(info[1]);
+    Local<Value> argv[argc] = { err, buffer };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
+
+  info.GetReturnValue().Set(buffer);
+}
+
+void WriteBlockData(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
+  auto bufferObj = info[1]->ToObject(context).ToLocalChecked();
+
+  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+  int len = node::Buffer::Length(bufferObj);
+  if (len > 32) {
+    Nan::ThrowError("Buffer length must be 32 bytes or less.");
+    return;
+  }
+  char* data = node::Buffer::Data(bufferObj);
+  Local<Value> err = Nan::New<Value>(Nan::Null());
+
+  if (i2c_smbus_write_block_data(fd, cmd, len, (unsigned char*) data) == -1) {
+    err = Nan::Error(Nan::New("Cannot write to device").ToLocalChecked());
+  }
+
+  if (info[2]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(info[2]);
+    Local<Value> argv[argc] = { err };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
+}
+
 NAN_MODULE_INIT(Init) {
 
   Nan::Set(target, Nan::New("setAddress").ToLocalChecked(),
@@ -302,6 +471,29 @@ NAN_MODULE_INIT(Init) {
   Nan::Set(target, Nan::New("readBlock").ToLocalChecked(),
     Nan::GetFunction(Nan::New<FunctionTemplate>(ReadBlock)).ToLocalChecked());
 
+  Nan::Set(target, Nan::New("writeWord").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(WriteWord)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New("readWord").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(ReadWord)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New("readProcessCall").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(ReadProcessCall)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New("writeQuick").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(WriteQuick)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New("readByteData").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(ReadByteData)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New("writeByteData").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(WriteByteData)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New("readBlockData").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(ReadBlockData)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New("writeBlockData").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(WriteBlockData)).ToLocalChecked());
 }
 
 NODE_MODULE(i2c, Init)
