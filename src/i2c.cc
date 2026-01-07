@@ -16,28 +16,26 @@ using namespace v8;
 int fd;
 int8_t addr;
 
-void setAddress(int8_t addr) {
-  Isolate* isolate = Isolate::GetCurrent();
-  Nan::HandleScope scope;
-
-  int result = ioctl(fd, I2C_SLAVE_FORCE, addr);
-  if (result == -1) {
-    isolate->ThrowException(
-      Exception::TypeError(Nan::New("Failed to set address").ToLocalChecked())
-    );
-    return;
-  }
-}
-
 void SetAddress(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
+  Local<Value> err = Nan::New<Value>(Nan::Null());
 
   if (!info[0]->IsNumber()) {
     Nan::ThrowTypeError("addr must be an int");
     return;
   }
   addr = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
-  setAddress(addr);
+
+  if (ioctl(fd, I2C_SLAVE_FORCE, addr) == -1) {
+    err = Nan::Error(Nan::New("Failed to set address").ToLocalChecked());
+  }
+
+  if (info[1]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(info[1]);
+    Local<Value> argv[argc] = { err };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+  }
 }
 
 void Scan(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -49,7 +47,10 @@ void Scan(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Local<Value> err = Nan::New<Value>(Nan::Null());
 
   for (i = 0; i < 128; i++) {
-    setAddress(i);
+    if (ioctl(fd, I2C_SLAVE_FORCE, i) == -1) {
+      err = Nan::Error(Nan::New("Failed to set address during scan").ToLocalChecked());
+      break;
+    }
     if ((i >= 0x30 && i <= 0x37) || (i >= 0x50 && i <= 0x5F)) {
       res = i2c_smbus_read_byte(fd);
     } else { 
@@ -61,7 +62,11 @@ void Scan(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     Nan::Set(results, i, Nan::New<Integer>(res));
   }
 
-  setAddress(addr);
+  if (err->IsNull()) {
+    if (ioctl(fd, I2C_SLAVE_FORCE, addr) == -1) {
+        err = Nan::Error(Nan::New("Failed to restore address after scan").ToLocalChecked());
+    }
+  }
 
   const unsigned argc = 2;
   Local<Value> argv[argc] = { err, results };
@@ -73,9 +78,19 @@ void Scan(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 
 void Close(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
+  Local<Value> err = Nan::New<Value>(Nan::Null());
 
   if (fd > 0) {
-    close(fd);
+    if (close(fd) == -1) {
+        err = Nan::Error(Nan::New("Failed to close I2C device").ToLocalChecked());
+    }
+  }
+
+  if (info[0]->IsFunction()) {
+    const unsigned argc = 1;
+    Local<Function> callback = Local<Function>::Cast(info[0]);
+    Local<Value> argv[argc] = { err };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
   }
 }
 
