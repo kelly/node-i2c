@@ -11,7 +11,11 @@
   "license": "BSD-3-Clause-Attribution",
   "dependencies": {
     "bindings": "^1.5.0",
+    "mocha": "^11.7.5",
     "nan": "^2.24.0"
   },
-  "engine": "node >= 18.0.0"
+  "engine": "node >= 18.0.0",
+  "devDependencies": {
+    "rewire": "^7.0.0"
+  }
 }
