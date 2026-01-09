@@ -10,13 +10,15 @@ $ npm install i2c
 
 ## Usage
 
+### Callback API
+
 ```javascript
+const i2c = require('i2c');
+const address = 0x18;
+const wire = new i2c(address, { device: '/dev/i2c-1' });
 
-var i2c = require('i2c');
-var address = 0x18;
-var wire = new i2c(address, {device: '/dev/i2c-1'}); // point to your i2c address, debug provides REPL interface
-
-wire.scan(function(err, data) {
+wire.scan((err, data) => {
+  if (err) throw err;
   // result contains an array of addresses
 });
 
@@ -44,8 +46,32 @@ wire.write([byte0, byte1], function(err) {});
 wire.read(length, function(err, res) {
   // result contains a buffer of bytes
 });
+````
 
+### Promise API
 
+```javascript
+const i2c = require('i2c');
+const wire = new i2c(0x18, { device: '/dev/i2c-1' });
+
+(async () => {
+  try {
+    const devices = await wire.scanAsync();
+    console.log('Devices found:', devices);
+
+    await wire.writeByteAsync(0x01);
+    await wire.writeBytesAsync(0x02, Buffer.from([0x03, 0x04]));
+
+    const byte = await wire.readByteAsync();
+    console.log('Byte read:', byte);
+
+    const bytes = await wire.readBytesAsync(0x03, 2);
+    console.log('Bytes read:', bytes);
+
+  } catch (err) {
+    console.error('Error:', err);
+  }
+})();
 ````
 
 ## Raspberry Pi Setup
