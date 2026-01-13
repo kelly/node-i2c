@@ -155,32 +155,20 @@ void ReadBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
   int32_t len = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
 
-  std::vector<uint8_t> data(len);
+  Local<Object> buffer = Nan::NewBuffer(len).ToLocalChecked();
+  char* bufferData = node::Buffer::Data(buffer);
+
   Local<Value> err = Nan::New<Value>(Nan::Null());
 
-  Local<Object> buffer = Nan::NewBuffer(len).ToLocalChecked();
+  if (i2c_smbus_read_i2c_block_data(fd, cmd, len, (uint8_t*) bufferData) != len) {
+    err = Nan::Error(Nan::New("Error reading length of bytes").ToLocalChecked());
+  }
 
-
-  while (fd > 0) {
-    if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data.data()) != len) {
-      err = Nan::Error(Nan::New("Error reading length of bytes").ToLocalChecked());
-    }
-
-    memcpy(node::Buffer::Data(buffer), data.data(), len);
-
-    if (info[3]->IsFunction()) {
-      const unsigned argc = 2;
-      Local<Function> callback = Local<Function>::Cast(info[3]);
-      Local<Value> argv[argc] = { err, buffer };
-      Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
-    }
- 
-    if (info[2]->IsNumber()) {
-      int32_t delay = info[2]->Int32Value(Nan::GetCurrentContext()).FromJust();
-      usleep(delay * 1000);
-    } else {
-      break;
-    }
+  if (info[2]->IsFunction()) {
+    const unsigned argc = 2;
+    Local<Function> callback = Local<Function>::Cast(info[2]);
+    Local<Value> argv[argc] = { err, buffer };
+    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
   }
 
   info.GetReturnValue().Set(buffer);
