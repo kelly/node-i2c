@@ -13,5 +13,20 @@
     "bindings": "^1.5.0",
     "nan": "^2.24.0"
   },
-  "engine": "node >= 18.0.0"
+  "engine": "node >= 18.0.0",
+  "gypfile": true,
+  "files": [
+    "lib",
+    "src",
+    "main.js",
+    "binding.gyp"
+  ],
+  "scripts": {
+    "test": "node -e \"require('./main')\"",
+    "lint": "eslint --ext .js ."
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "mocha": "^10.4.0"
+  }
 }
