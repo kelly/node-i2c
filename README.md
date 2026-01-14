@@ -47,6 +47,38 @@ wire.read(length, function(err, res) {
 
 
 ````
+## Usage with async/await
+
+```javascript
+const i2c = require('i2c');
+const address = 0x18;
+const wire = new i2c(address, {device: '/dev/i2c-1'});
+
+(async () => {
+  try {
+    const data = await wire.scanAsync();
+    // result contains an array of addresses
+
+    await wire.writeByteAsync(byte);
+
+    await wire.writeBytesAsync(command, [byte0, byte1]);
+
+    const byte = await wire.readByteAsync();
+    // result is single byte
+
+    const bytes = await wire.readBytesAsync(command, length);
+    // result contains a buffer of bytes
+
+    // plain read/write
+    await wire.writeAsync([byte0, byte1]);
+
+    const buffer = await wire.readAsync(length);
+    // result contains a buffer of bytes
+  } catch (err) {
+    // handle errors
+  }
+})();
+```
 
 ## Raspberry Pi Setup
 
