@@ -6,12 +6,31 @@
   "author": "Kelly Korevec",
   "repository": {
     "type": "git",
-    "url": "http://github.com/korevec/node-i2c.git"
+    "url": "https://github.com/korevec/node-i2c.git"
   },
-  "license": "BSD-3-Clause-Attribution",
+  "bugs": {
+    "url": "https://github.com/korevec/node-i2c/issues"
+  },
+  "homepage": "https://github.com/korevec/node-i2c",
+  "license": "BSD-3-Clause",
+  "files": [
+    "lib",
+    "src",
+    "main.js",
+    "binding.gyp"
+  ],
+  "keywords": [
+    "i2c",
+    "raspberry pi",
+    "beaglebone"
+  ],
+  "scripts": {
+    "test": "exit 0"
+  },
   "dependencies": {
     "bindings": "^1.5.0",
     "nan": "^2.24.0"
   },
+  "gypfile": true,
   "engine": "node >= 18.0.0"
 }
