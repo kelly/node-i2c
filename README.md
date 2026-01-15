@@ -1,52 +1,52 @@
-# i2c
+# i2c-next
 
-Bindings for i2c-dev. Plays well with Raspberry Pi and Beaglebone.
+[![npm](https://img.shields.io/npm/v/i2c-next)](https://www.npmjs.com/package/i2c-next)
+
+Modern I2C bindings for Node.js. Plays well with Raspberry Pi and Beaglebone.
 
 ## Install
 
-````bash
-$ npm install i2c
-````
+```bash
+$ npm install i2c-next
+```
 
 ## Usage
 
 ```javascript
+const i2c = require('i2c-next');
+const address = 0x18;
+const wire = new i2c(address, { device: '/dev/i2c-1' });
 
-var i2c = require('i2c');
-var address = 0x18;
-var wire = new i2c(address, {device: '/dev/i2c-1'}); // point to your i2c address, debug provides REPL interface
+(async () => {
+  try {
+    const addresses = await wire.scan();
+    console.log('Detected I2C addresses:', addresses);
 
-wire.scan(function(err, data) {
-  // result contains an array of addresses
-});
+    await wire.writeByte(0x01);
+    await wire.writeBytes(0x02, [0x03, 0x04]);
 
-wire.writeByte(byte, function(err) {});
+    const byte = await wire.readByte();
+    console.log('Read byte:', byte);
 
-wire.writeBytes(command, [byte0, byte1], function(err) {});
+    const bytes = await wire.readBytes(0x03, 2);
+    console.log('Read bytes:', bytes);
 
-wire.readByte(function(err, res) { // result is single byte })
+    // Event listener for streaming data
+    wire.on('data', (data) => {
+      console.log('Stream data:', data);
+    });
 
-wire.readBytes(command, length, function(err, res) {
-  // result contains a buffer of bytes
-});
+    // Start streaming
+    wire.stream(0x04, 2, 500); // command, length, delay (ms)
 
-wire.on('data', function(data) {
-  // result for continuous stream contains data buffer, address, length, timestamp
-});
+    // Stop streaming after some time
+    setTimeout(() => wire.close(), 5000);
 
-wire.stream(command, length, delay); // continuous stream, delay in ms
-
-
-// plain read/write
-
-wire.write([byte0, byte1], function(err) {});
-
-wire.read(length, function(err, res) {
-  // result contains a buffer of bytes
-});
-
-
-````
+  } catch (err) {
+    console.error('Error:', err);
+  }
+})();
+```
 
 ## Raspberry Pi Setup
 
@@ -58,7 +58,7 @@ $ sudo vi /etc/modules
 Add these two lines
 
 ````bash
-i2c-bcm2708 
+i2c-bcm2708
 i2c-dev
 ````
 
@@ -79,28 +79,18 @@ $ sudo modprobe i2c-bcm2708
 $ sudo modprobe i2c-dev
 ````
 
-Make device writable 
+Make device writable
 
 ````bash
 sudo chmod o+rw /dev/i2c*
-````
-
-Install gcc 4.8 (required for Nan)
-
-````bash
-sudo apt-get install gcc-4.8 g++-4.8
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.6
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
-sudo update-alternatives --config gcc 
-
 ````
 
 Set correct device for version
 
 ```javascript
 
-new i2c(address, device: '/dev/i2c-0') // rev 1
-new i2c(address, device: '/dev/i2c-1') // rev 2
+new i2c(address, { device: '/dev/i2c-0' }); // rev 1
+new i2c(address, { device: '/dev/i2c-1' }); // rev 2
 
 ````
 
@@ -116,16 +106,10 @@ $ npm config set strict-ssl false
 $ npm install i2c
 ````
 
-## Node 0.11 and under
-
-````bash
-npm install i2c@0.1.8
-````
-
 ## Projects using i2c
 
 - **bonescript** https://github.com/jadonk/bonescript/
-- **ADXL345** https://github.com/timbit123/ADXL345 
+- **ADXL345** https://github.com/timbit123/ADXL345
 - **HMC6343** https://github.com/omcaree/node-hmc6343
 - **LSM303** https://github.com/praneshkmr/node-lsm303
 - **MPU6050** https://github.com/jstapels/mpu6050/

@@ -1,6 +1,6 @@
 {
-  "name": "i2c",
-  "version": "0.3.0",
+  "name": "i2c-next",
+  "version": "1.0.0",
   "description": "Native bindings for i2c-dev. Plays well with Raspberry Pi and BeagleBone.",
   "main": "main.js",
   "author": "Kelly Korevec",
@@ -11,7 +11,13 @@
   "license": "BSD-3-Clause-Attribution",
   "dependencies": {
     "bindings": "^1.5.0",
-    "nan": "^2.24.0"
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "scripts": {
+    "test": "jest"
   },
   "engine": "node >= 18.0.0"
 }

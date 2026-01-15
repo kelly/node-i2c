@@ -1,6 +1,4 @@
-#include <node.h>
-#include <node_buffer.h>
-#include <nan.h>
+#include <napi.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <errno.h>
@@ -11,297 +9,134 @@
 #include <vector>
 #include "i2c-dev.h"
 
-
-using namespace v8;
 int fd;
 int8_t addr;
 
-void setAddress(int8_t addr) {
-  Isolate* isolate = Isolate::GetCurrent();
-  Nan::HandleScope scope;
-
+void setAddress(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int8_t addr = (int8_t)info[0].As<Napi::Number>().Int32Value();
   int result = ioctl(fd, I2C_SLAVE_FORCE, addr);
   if (result == -1) {
-    isolate->ThrowException(
-      Exception::TypeError(Nan::New("Failed to set address").ToLocalChecked())
-    );
-    return;
+    Napi::Error::New(env, "Failed to set address").ThrowAsJavaScriptException();
   }
 }
 
-void SetAddress(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
+Napi::Value Scan(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
 
-  if (!info[0]->IsNumber()) {
-    Nan::ThrowTypeError("addr must be an int");
-    return;
-  }
-  addr = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
-  setAddress(addr);
-}
-
-void Scan(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
-
-  int i, res;
-  Local<Function> callback = Local<Function>::Cast(info[0]);
-  Local<Array> results = Nan::New<Array>(128);
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
-  for (i = 0; i < 128; i++) {
-    setAddress(i);
+  Napi::Array results = Napi::Array::New(env, 128);
+  for (int i = 0; i < 128; i++) {
+    ioctl(fd, I2C_SLAVE_FORCE, i);
+    int res;
     if ((i >= 0x30 && i <= 0x37) || (i >= 0x50 && i <= 0x5F)) {
       res = i2c_smbus_read_byte(fd);
-    } else { 
+    } else {
       res = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
     }
     if (res >= 0) {
       res = i;
     }
-    Nan::Set(results, i, Nan::New<Integer>(res));
+    results[i] = Napi::Number::New(env, res);
   }
 
-  setAddress(addr);
+  ioctl(fd, I2C_SLAVE_FORCE, addr);
 
-  const unsigned argc = 2;
-  Local<Value> argv[argc] = { err, results };
-
-  Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
-
-  info.GetReturnValue().Set(results);
+  return results;
 }
 
-void Close(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
-
+void Close(const Napi::CallbackInfo& info) {
   if (fd > 0) {
     close(fd);
   }
 }
 
-void Open(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
-
-  Nan::Utf8String device(info[0]);
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
-  fd = open(*device, O_RDWR);
+void Open(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  std::string device = info[0].As<Napi::String>().Utf8Value();
+  fd = open(device.c_str(), O_RDWR);
   if (fd == -1) {
-    err = Nan::Error(Nan::New("Failed to open I2C device").ToLocalChecked());
-  }
-
-  if (info[1]->IsFunction()) {
-    const unsigned argc = 1;
-    Local<Function> callback = Local<Function>::Cast(info[1]);
-    Local<Value> argv[argc] = { err };
-    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+    Napi::Error::New(env, "Failed to open I2C device").ThrowAsJavaScriptException();
   }
 }
 
-void Read(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
-
-  int len = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
-
-  Local<Array> data = Nan::New<Array>();
-
+Napi::Value Read(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int len = info[0].As<Napi::Number>().Int32Value();
   char* buf = new char[len];
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
   if (read(fd, buf, len) != len) {
-    err = Nan::Error(Nan::New("Cannot read from device").ToLocalChecked());
-  } else {
-    for (int i = 0; i < len; ++i) {
-      Nan::Set(data, i, Nan::New<Integer>(buf[i]));
-    }
+    delete[] buf;
+    Napi::Error::New(env, "Cannot read from device").ThrowAsJavaScriptException();
+    return env.Null();
   }
+  Napi::Buffer<char> buffer = Napi::Buffer<char>::Copy(env, buf, len);
   delete[] buf;
-
-  if (info[1]->IsFunction()) {
-    const unsigned argc = 2;
-    Local<Function> callback = Local<Function>::Cast(info[1]);
-    Local<Value> argv[argc] = { err, data };
-    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
-  }
+  return buffer;
 }
 
-void ReadByte(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
-  
-  Local<Value> data; 
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
+Napi::Value ReadByte(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
   int32_t res = i2c_smbus_read_byte(fd);
-
-  if (res == -1) { 
-    err = Nan::Error(Nan::New("Cannot read device").ToLocalChecked());
-  } else {
-    data = Nan::New<Integer>(res);
+  if (res == -1) {
+    Napi::Error::New(env, "Cannot read device").ThrowAsJavaScriptException();
+    return env.Null();
   }
-
-  if (info[0]->IsFunction()) {
-    const unsigned argc = 2;
-    Local<Function> callback = Local<Function>::Cast(info[0]);
-    Local<Value> argv[argc] = { err, data };
-    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
-  }
-
-  info.GetReturnValue().Set(data);
+  return Napi::Number::New(env, res);
 }
 
-void ReadBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
+Napi::Value ReadBlock(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    int8_t cmd = (int8_t)info[0].As<Napi::Number>().Int32Value();
+    int32_t len = info[1].As<Napi::Number>().Int32Value();
+    std::vector<uint8_t> data(len);
 
-  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
-  int32_t len = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
-
-  std::vector<uint8_t> data(len);
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
-  Local<Object> buffer = Nan::NewBuffer(len).ToLocalChecked();
-
-
-  while (fd > 0) {
     if (i2c_smbus_read_i2c_block_data(fd, cmd, len, data.data()) != len) {
-      err = Nan::Error(Nan::New("Error reading length of bytes").ToLocalChecked());
+        Napi::Error::New(env, "Error reading length of bytes").ThrowAsJavaScriptException();
+        return env.Null();
     }
 
-    memcpy(node::Buffer::Data(buffer), data.data(), len);
-
-    if (info[3]->IsFunction()) {
-      const unsigned argc = 2;
-      Local<Function> callback = Local<Function>::Cast(info[3]);
-      Local<Value> argv[argc] = { err, buffer };
-      Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
-    }
- 
-    if (info[2]->IsNumber()) {
-      int32_t delay = info[2]->Int32Value(Nan::GetCurrentContext()).FromJust();
-      usleep(delay * 1000);
-    } else {
-      break;
-    }
-  }
-
-  info.GetReturnValue().Set(buffer);
+    return Napi::Buffer<uint8_t>::Copy(env, data.data(), len);
 }
 
-void Write(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
 
-  auto bufferObj = info[0]->ToObject(Nan::GetCurrentContext()).ToLocalChecked();
-
-  int   len = node::Buffer::Length(bufferObj);
-  char* data = node::Buffer::Data(bufferObj);
-
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
-  if (write(fd, (unsigned char*) data, len) != len) {
-    err = Nan::Error(Nan::New("Cannot write to device").ToLocalChecked());
-  }
-
-  if (info[1]->IsFunction()) {
-    const unsigned argc = 1;
-    Local<Function> callback = Local<Function>::Cast(info[1]);
-    Local<Value> argv[argc] = { err };
-    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+void Write(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::Buffer<char> buffer = info[0].As<Napi::Buffer<char>>();
+  if (write(fd, buffer.Data(), buffer.Length()) != (ssize_t)buffer.Length()) {
+    Napi::Error::New(env, "Cannot write to device").ThrowAsJavaScriptException();
   }
 }
 
-void WriteByte(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
-
-  int8_t byte = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
+void WriteByte(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  int8_t byte = (int8_t)info[0].As<Napi::Number>().Int32Value();
   if (i2c_smbus_write_byte(fd, byte) == -1) {
-    err = Nan::Error(Nan::New("Cannot write to device").ToLocalChecked());
-  }
-
-  if (info[1]->IsFunction()) {
-    const unsigned argc = 1;
-    Local<Function> callback = Local<Function>::Cast(info[1]);
-    Local<Value> argv[argc] = { err };
-    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
+    Napi::Error::New(env, "Cannot write to device").ThrowAsJavaScriptException();
   }
 }
 
-void WriteBlock(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
+void WriteBlock(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    int8_t cmd = (int8_t)info[0].As<Napi::Number>().Int32Value();
+    Napi::Buffer<unsigned char> buffer = info[1].As<Napi::Buffer<unsigned char>>();
 
-  v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
-  auto bufferObj = info[1]->ToObject(context).ToLocalChecked();
-
-  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
-  int   len = node::Buffer::Length(bufferObj);
-  char* data = node::Buffer::Data(bufferObj);
-
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-
-  if (i2c_smbus_write_i2c_block_data(fd, cmd, len, (unsigned char*) data) == -1) {
-    err = Nan::Error(Nan::New("Cannot write to device").ToLocalChecked());
-  }
-
-  if (info[2]->IsFunction()) {
-    const unsigned argc = 1;
-    Local<Function> callback = Local<Function>::Cast(info[2]);
-    Local<Value> argv[argc] = { err };
-    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
-  }
+    if (i2c_smbus_write_i2c_block_data(fd, cmd, buffer.Length(), buffer.Data()) == -1) {
+        Napi::Error::New(env, "Cannot write to device").ThrowAsJavaScriptException();
+    }
 }
 
-void WriteWord(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  Nan::HandleScope scope;
-  
-  int8_t cmd = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
-  int16_t word = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
 
-  Local<Value> err = Nan::New<Value>(Nan::Null());
-  
-  if (i2c_smbus_write_word_data(fd, cmd, word) == -1) {
-    err = Nan::Error(Nan::New("Cannot write to device").ToLocalChecked());
-  }
-
-  if (info[2]->IsFunction()) {
-    const unsigned argc = 1;
-    Local<Function> callback = Local<Function>::Cast(info[2]);
-    Local<Value> argv[argc] = { err };
-    Nan::Call(callback, Nan::GetCurrentContext()->Global(), argc, argv);
-  }
+Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  exports.Set(Napi::String::New(env, "setAddress"), Napi::Function::New(env, setAddress));
+  exports.Set(Napi::String::New(env, "scan"), Napi::Function::New(env, Scan));
+  exports.Set(Napi::String::New(env, "open"), Napi::Function::New(env, Open));
+  exports.Set(Napi::String::New(env, "close"), Napi::Function::New(env, Close));
+  exports.Set(Napi::String::New(env, "write"), Napi::Function::New(env, Write));
+  exports.Set(Napi::String::New(env, "writeByte"), Napi::Function::New(env, WriteByte));
+  exports.Set(Napi::String::New(env, "writeBlock"), Napi::Function::New(env, WriteBlock));
+  exports.Set(Napi::String::New(env, "read"), Napi::Function::New(env, Read));
+  exports.Set(Napi::String::New(env, "readByte"), Napi::Function::New(env, ReadByte));
+  exports.Set(Napi::String::New(env, "readBlock"), Napi::Function::New(env, ReadBlock));
+  return exports;
 }
 
-NAN_MODULE_INIT(Init) {
-
-  Nan::Set(target, Nan::New("setAddress").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(SetAddress)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("scan").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Scan)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("open").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Open)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("close").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Close)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("write").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Write)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("writeByte").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(WriteByte)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("writeBlock").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(WriteBlock)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("read").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Read)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("readByte").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(ReadByte)).ToLocalChecked());
-
-  Nan::Set(target, Nan::New("readBlock").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(ReadBlock)).ToLocalChecked());
-
-}
-
-NODE_MODULE(i2c, Init)
+NODE_API_MODULE(i2c, Init)
