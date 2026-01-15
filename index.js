@@ -1,4 +1,4 @@
-const wire = require('../build/Release/i2c');
+const wire = require('./build/Release/i2c');
 const { EventEmitter } = require('events');
 const tick = setImmediate || process.nextTick;
 
