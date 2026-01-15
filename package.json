@@ -1,7 +1,7 @@
 {
   "name": "i2c",
   "version": "0.3.0",
-  "description": "Native bindings for i2c-dev. Plays well with Raspberry Pi and BeagleBone.",
+  "description": "Native I2C bindings for Node.js. This module provides an interface to i2c-dev, making it easy to communicate with I2C devices on hardware like Raspberry Pi and BeagleBone.",
   "main": "main.js",
   "author": "Kelly Korevec",
   "repository": {
@@ -9,9 +9,30 @@
     "url": "http://github.com/korevec/node-i2c.git"
   },
   "license": "BSD-3-Clause-Attribution",
+  "keywords": [
+    "i2c",
+    "i2c-dev",
+    "raspberry pi",
+    "beaglebone",
+    "hardware"
+  ],
+  "gypfile": true,
+  "contributors": [
+    "alphacharlie",
+    "J-Cat"
+  ],
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
     "bindings": "^1.5.0",
     "nan": "^2.24.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "mocha": "^11.7.5",
+    "node-gyp": "^12.1.0"
   },
   "engine": "node >= 18.0.0"
 }
