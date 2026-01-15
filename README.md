@@ -1,145 +1,125 @@
-# i2c
+# i2c-bus
 
-Bindings for i2c-dev. Plays well with Raspberry Pi and Beaglebone.
+[![npm](https://img.shields.io/npm/v/i2c-bus.svg)](https://www.npmjs.com/package/i2c-bus)
+[![Build Status](https://travis-ci.org/korevec/node-i2c.svg?branch=master)](https://travis-ci.org/korevec/node-i2c)
 
-## Install
+`i2c-bus` provides native bindings for `i2c-dev`. It's designed to play well with Raspberry Pi and BeagleBone.
 
-````bash
-$ npm install i2c
-````
+## Features
+
+- **Promise and Callback API:** Supports modern `async/await` and traditional callback patterns.
+- **Robust Error Handling:** Provides clear and consistent error messages.
+- **Comprehensive Platform Support:** Works seamlessly with Raspberry Pi, BeagleBone, and other Linux-based systems.
+
+## Installation
+
+```bash
+npm install i2c-bus
+```
 
 ## Usage
 
+Here's a quick example of how to use `i2c-bus` with `async/await`:
+
 ```javascript
+const i2c = require('i2c-bus');
+const { promisify } = require('util');
 
-var i2c = require('i2c');
-var address = 0x18;
-var wire = new i2c(address, {device: '/dev/i2c-1'}); // point to your i2c address, debug provides REPL interface
+const I2C_ADDR = 0x18;
+const wire = new i2c(I2C_ADDR, { device: '/dev/i2c-1' });
 
-wire.scan(function(err, data) {
-  // result contains an array of addresses
-});
+const scan = promisify(wire.scan.bind(wire));
+const readByte = promisify(wire.readByte.bind(wire));
+const writeByte = promisify(wire.writeByte.bind(wire));
 
-wire.writeByte(byte, function(err) {});
+(async () => {
+  try {
+    const devices = await scan();
+    console.log('Found devices:', devices);
 
-wire.writeBytes(command, [byte0, byte1], function(err) {});
+    await writeByte(0x42);
+    const byte = await readByte();
+    console.log('Read byte:', byte);
+  } catch (err) {
+    console.error('Error:', err);
+  }
+})();
+```
 
-wire.readByte(function(err, res) { // result is single byte })
+## API Reference
 
-wire.readBytes(command, length, function(err, res) {
-  // result contains a buffer of bytes
-});
+All methods are available on the `wire` object created by `new i2c(address, options)`.
 
-wire.on('data', function(data) {
-  // result for continuous stream contains data buffer, address, length, timestamp
-});
+**`scan(callback)`**
 
-wire.stream(command, length, delay); // continuous stream, delay in ms
+- Scans the I2C bus for connected devices.
+- `callback(err, devices)`:
+  - `err`: An error object if the scan fails.
+  - `devices`: An array of detected I2C addresses.
 
+**`writeByte(byte, callback)`**
 
-// plain read/write
+- Writes a single byte to the device.
+- `callback(err)`: Called once the write is complete.
 
-wire.write([byte0, byte1], function(err) {});
+**`writeBytes(command, buffer, callback)`**
 
-wire.read(length, function(err, res) {
-  // result contains a buffer of bytes
-});
+- Writes a sequence of bytes to the device.
+- `command`: The command to write.
+- `buffer`: A `Buffer` or array of bytes.
+- `callback(err)`: Called once the write is complete.
 
+**`readByte(callback)`**
 
-````
+- Reads a single byte from the device.
+- `callback(err, byte)`:
+  - `err`: An error object if the read fails.
+  - `byte`: The byte read from the device.
+
+**`readBytes(command, length, callback)`**
+
+- Reads a block of bytes from the device.
+- `command`: The command to read from.
+- `length`: The number of bytes to read.
+- `callback(err, buffer)`:
+  - `err`: An error object if the read fails.
+  - `buffer`: A `Buffer` containing the bytes read.
+
+**`stream(command, length, delay)`**
+
+- Starts a continuous stream of data from the device.
+- `command`: The command to read from.
+- `length`: The number of bytes to read in each chunk.
+- `delay`: The delay in milliseconds between reads.
+- Emits a `data` event with a data object containing the buffer, address, length, and timestamp.
 
 ## Raspberry Pi Setup
 
+1. **Enable I2C:**
+   - Run `sudo raspi-config`.
+   - Navigate to `Interfacing Options` > `I2C`.
+   - Select `<Yes>` to enable the I2C interface.
 
-````bash
-$ sudo vi /etc/modules
-````
+2. **Install Dependencies:**
+   - Ensure `build-essential` and `python-dev` are installed:
+     ```bash
+     sudo apt-get install build-essential python-dev
+     ```
 
-Add these two lines
+3. **Set Device Permissions:**
+   - Make the I2C device writable:
+     ```bash
+     sudo chmod o+rw /dev/i2c*
+     ```
 
-````bash
-i2c-bcm2708 
-i2c-dev
-````
+## BeagleBone Setup
 
-````bash
-$ sudo vi /etc/modprobe.d/raspi-blacklist.conf
-````
+For BeagleBone, the I2C buses are typically enabled by default. You may need to load the appropriate cape if you're using a custom hardware setup.
 
-Comment out blacklist i2c-bcm2708
+## Contributing
 
-````
-#blacklist i2c-bcm2708
-````
+Contributions are welcome! Please open an issue or submit a pull request on GitHub.
 
-Load kernel module
+## License
 
-````bash
-$ sudo modprobe i2c-bcm2708
-$ sudo modprobe i2c-dev
-````
-
-Make device writable 
-
-````bash
-sudo chmod o+rw /dev/i2c*
-````
-
-Install gcc 4.8 (required for Nan)
-
-````bash
-sudo apt-get install gcc-4.8 g++-4.8
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.6
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
-sudo update-alternatives --config gcc 
-
-````
-
-Set correct device for version
-
-```javascript
-
-new i2c(address, device: '/dev/i2c-0') // rev 1
-new i2c(address, device: '/dev/i2c-1') // rev 2
-
-````
-
-## Beaglebone
-
-````bash
-$ ntpdate -b -s -u pool.ntp.org
-$ opkg update
-$ opkg install python-compile
-$ opkg install python-modules
-$ opkg install python-misc
-$ npm config set strict-ssl false
-$ npm install i2c
-````
-
-## Node 0.11 and under
-
-````bash
-npm install i2c@0.1.8
-````
-
-## Projects using i2c
-
-- **bonescript** https://github.com/jadonk/bonescript/
-- **ADXL345** https://github.com/timbit123/ADXL345 
-- **HMC6343** https://github.com/omcaree/node-hmc6343
-- **LSM303** https://github.com/praneshkmr/node-lsm303
-- **MPU6050** https://github.com/jstapels/mpu6050/
-- **MCP3424** https://github.com/x3itsolutions/mcp3424
-- **blinkm** https://github.com/korevec/blinkm
-- **click boards** https://github.com/TheThingSystem/node-click-boards
-- more: https://www.npmjs.org/browse/depended/i2c
-
-
-## Contributors
-
-Thanks to @alphacharlie for Nan rewrite, and @J-Cat for Node 14 updates.
-
-
-## Questions?
-
-http://www.twitter.com/korevec
+This project is licensed under the BSD-3-Clause license. See the [LICENSE](LICENSE) file for details.
