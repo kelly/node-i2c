@@ -1,4 +1,4 @@
-const Wire = require('../../main');
+const Wire = require('../../index');
 
 // for AK8975
 // info: https://github.com/jrowberg/i2cdevlib/blob/master/Arduino/AK8975/AK8975.cpp
