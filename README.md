@@ -1,144 +1,106 @@
-# i2c
+# i2c-next
 
-Bindings for i2c-dev. Plays well with Raspberry Pi and Beaglebone.
+[![NPM version](https://img.shields.io/npm/v/i2c-next.svg)](https://www.npmjs.com/package/i2c-next)
+[![Build Status](https://travis-ci.org/korevec/node-i2c.svg?branch=master)](https://travis-ci.org/korevec/node-i2c)
+[![License](https://img.shields.io/npm/l/i2c-next.svg)](https://www.npmjs.com/package/i2c-next)
+
+Native I2C bindings for Node.js. This library is a promisified wrapper around the original [i2c](https://www.npmjs.com/package/i2c) library, providing a modern `async/await` API.
 
 ## Install
 
-````bash
-$ npm install i2c
-````
+```bash
+$ npm install i2c-next
+```
 
 ## Usage
 
 ```javascript
+const I2C = require('i2c-next');
 
-var i2c = require('i2c');
-var address = 0x18;
-var wire = new i2c(address, {device: '/dev/i2c-1'}); // point to your i2c address, debug provides REPL interface
+const ADDRESS = 0x18;
 
-wire.scan(function(err, data) {
-  // result contains an array of addresses
-});
+const main = async () => {
+  const i2c = new I2C(ADDRESS, { device: '/dev/i2c-1' });
 
-wire.writeByte(byte, function(err) {});
+  try {
+    const devices = await i2c.scan();
+    console.log('Found devices:', devices);
 
-wire.writeBytes(command, [byte0, byte1], function(err) {});
+    await i2c.writeByte(0x01);
+    console.log('Wrote a byte.');
 
-wire.readByte(function(err, res) { // result is single byte })
+    await i2c.writeBytes(0x02, [0x03, 0x04]);
+    console.log('Wrote bytes.');
 
-wire.readBytes(command, length, function(err, res) {
-  // result contains a buffer of bytes
-});
+    const byte = await i2c.readByte();
+    console.log('Read byte:', byte);
 
-wire.on('data', function(data) {
-  // result for continuous stream contains data buffer, address, length, timestamp
-});
+    const bytes = await i2c.readBytes(0x05, 2);
+    console.log('Read bytes:', bytes);
 
-wire.stream(command, length, delay); // continuous stream, delay in ms
+    await i2c.write([0x06, 0x07]);
+    console.log('Wrote plain bytes.');
 
+    const readBytes = await i2c.read(2);
+    console.log('Read plain bytes:', readBytes);
 
-// plain read/write
+    i2c.stream(0x08, 2, 100).on('data', (data) => {
+      console.log('Stream data:', data);
+    });
 
-wire.write([byte0, byte1], function(err) {});
+  } catch (err) {
+    console.error('Error:', err);
+  }
+};
 
-wire.read(length, function(err, res) {
-  // result contains a buffer of bytes
-});
-
-
-````
+main();
+```
 
 ## Raspberry Pi Setup
 
+1.  **Enable I2C:**
+    *   Run `sudo raspi-config`.
+    *   Go to `Interfacing Options` -> `I2C`.
+    *   Enable the I2C interface.
 
-````bash
-$ sudo vi /etc/modules
-````
+2.  **Install Dependencies:**
+    *   This library requires `node-gyp` to build the native C++ addons. If you don't have it installed, you can install it with:
+        ```bash
+        $ sudo apt-get install -y build-essential python
+        $ npm install -g node-gyp
+        ```
 
-Add these two lines
+3.  **Set Permissions:**
+    *   Make the I2C device writable:
+        ```bash
+        $ sudo chmod o+rw /dev/i2c*
+        ```
 
-````bash
-i2c-bcm2708 
-i2c-dev
-````
+## Beaglebone Setup
 
-````bash
-$ sudo vi /etc/modprobe.d/raspi-blacklist.conf
-````
-
-Comment out blacklist i2c-bcm2708
-
-````
-#blacklist i2c-bcm2708
-````
-
-Load kernel module
-
-````bash
-$ sudo modprobe i2c-bcm2708
-$ sudo modprobe i2c-dev
-````
-
-Make device writable 
-
-````bash
-sudo chmod o+rw /dev/i2c*
-````
-
-Install gcc 4.8 (required for Nan)
-
-````bash
-sudo apt-get install gcc-4.8 g++-4.8
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.6
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
-sudo update-alternatives --config gcc 
-
-````
-
-Set correct device for version
-
-```javascript
-
-new i2c(address, device: '/dev/i2c-0') // rev 1
-new i2c(address, device: '/dev/i2c-1') // rev 2
-
-````
-
-## Beaglebone
-
-````bash
+```bash
 $ ntpdate -b -s -u pool.ntp.org
 $ opkg update
-$ opkg install python-compile
-$ opkg install python-modules
-$ opkg install python-misc
+$ opkg install python-compile python-modules python-misc
 $ npm config set strict-ssl false
-$ npm install i2c
-````
+$ npm install i2c-next
+```
 
-## Node 0.11 and under
+## Projects using i2c-next
 
-````bash
-npm install i2c@0.1.8
-````
-
-## Projects using i2c
-
-- **bonescript** https://github.com/jadonk/bonescript/
-- **ADXL345** https://github.com/timbit123/ADXL345 
-- **HMC6343** https://github.com/omcaree/node-hmc6343
-- **LSM303** https://github.com/praneshkmr/node-lsm303
-- **MPU6050** https://github.com/jstapels/mpu6050/
-- **MCP3424** https://github.com/x3itsolutions/mcp3424
-- **blinkm** https://github.com/korevec/blinkm
-- **click boards** https://github.com/TheThingSystem/node-click-boards
-- more: https://www.npmjs.org/browse/depended/i2c
-
+*   **bonescript** https://github.com/jadonk/bonescript/
+*   **ADXL345** https://github.com/timbit123/ADXL345
+*   **HMC6343** https://github.com/omcaree/node-hmc6343
+*   **LSM303** https://github.com/praneshkmr/node-lsm303
+*   **MPU6050** https://github.com/jstapels/mpu6050/
+*   **MCP3424** https://github.com/x3itsolutions/mcp3424
+*   **blinkm** https://github.com/korevec/blinkm
+*   **click boards** https://github.com/TheThingSystem/node-click-boards
+*   more: https://www.npmjs.com/browse/depended/i2c
 
 ## Contributors
 
 Thanks to @alphacharlie for Nan rewrite, and @J-Cat for Node 14 updates.
-
 
 ## Questions?
 
