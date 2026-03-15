@@ -1,144 +1,136 @@
 # i2c
 
-Bindings for i2c-dev. Plays well with Raspberry Pi and Beaglebone.
+Native bindings for i2c-dev. Plays well with Raspberry Pi and BeagleBone.
 
 ## Install
 
-````bash
-$ npm install i2c
-````
+```bash
+npm install i2c
+```
+
+Requires Node.js >= 18 and a Linux system with I2C support. The native addon uses [Node-API](https://nodejs.org/api/n-api.html) for ABI stability across Node.js versions — no recompilation needed when upgrading Node.js.
 
 ## Usage
 
 ```javascript
+const I2C = require('i2c');
+const address = 0x18;
+const wire = new I2C(address, { device: '/dev/i2c-1' });
 
-var i2c = require('i2c');
-var address = 0x18;
-var wire = new i2c(address, {device: '/dev/i2c-1'}); // point to your i2c address, debug provides REPL interface
+wire.on('open', () => {
+  // device is ready
 
-wire.scan(function(err, data) {
-  // result contains an array of addresses
+  wire.scan((err, data) => {
+    // data contains an array of detected device addresses
+  });
+
+  wire.writeByte(byte, (err) => {});
+
+  wire.writeBytes(command, [byte0, byte1], (err) => {});
+
+  wire.readByte((err, res) => {
+    // res is a single byte
+  });
+
+  wire.readBytes(command, length, (err, res) => {
+    // res contains a buffer of bytes
+  });
+
+  // plain read/write
+  wire.write([byte0, byte1], (err) => {});
+
+  wire.read(length, (err, res) => {
+    // res contains a buffer of bytes
+  });
+
+  // continuous streaming
+  wire.on('data', (data) => {
+    // data contains: { address, data, cmd, length, timestamp }
+  });
+
+  wire.stream(command, length, delay); // delay in ms (default: 100)
+  wire.stopStream(); // stop streaming
 });
-
-wire.writeByte(byte, function(err) {});
-
-wire.writeBytes(command, [byte0, byte1], function(err) {});
-
-wire.readByte(function(err, res) { // result is single byte })
-
-wire.readBytes(command, length, function(err, res) {
-  // result contains a buffer of bytes
-});
-
-wire.on('data', function(data) {
-  // result for continuous stream contains data buffer, address, length, timestamp
-});
-
-wire.stream(command, length, delay); // continuous stream, delay in ms
-
-
-// plain read/write
-
-wire.write([byte0, byte1], function(err) {});
-
-wire.read(length, function(err, res) {
-  // result contains a buffer of bytes
-});
-
-
-````
+```
 
 ## Raspberry Pi Setup
 
+Enable I2C on Raspberry Pi OS:
 
-````bash
-$ sudo vi /etc/modules
-````
+```bash
+sudo raspi-config
+```
 
-Add these two lines
+Navigate to **Interface Options > I2C** and select **Yes** to enable.
 
-````bash
-i2c-bcm2708 
-i2c-dev
-````
+Alternatively, enable manually:
 
-````bash
-$ sudo vi /etc/modprobe.d/raspi-blacklist.conf
-````
+```bash
+sudo dtparam i2c_arm=on
+sudo modprobe i2c-dev
+```
 
-Comment out blacklist i2c-bcm2708
+To load `i2c-dev` automatically on boot, add it to `/etc/modules-load.d/`:
 
-````
-#blacklist i2c-bcm2708
-````
+```bash
+echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c.conf
+```
 
-Load kernel module
+Verify the I2C bus is available:
 
-````bash
-$ sudo modprobe i2c-bcm2708
-$ sudo modprobe i2c-dev
-````
+```bash
+ls /dev/i2c-*
+```
 
-Make device writable 
+Install I2C tools for debugging:
 
-````bash
-sudo chmod o+rw /dev/i2c*
-````
+```bash
+sudo apt install i2c-tools
+i2cdetect -y 1
+```
 
-Install gcc 4.8 (required for Nan)
+By default, the I2C device requires root access. To allow non-root users, add your user to the `i2c` group:
 
-````bash
-sudo apt-get install gcc-4.8 g++-4.8
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.6
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
-sudo update-alternatives --config gcc 
+```bash
+sudo usermod -aG i2c $USER
+```
 
-````
+Log out and back in for the group change to take effect.
 
-Set correct device for version
+### Device path
+
+The default device path is `/dev/i2c-1`, which is correct for most Raspberry Pi models (2 and later). For the original Raspberry Pi (rev 1), use `/dev/i2c-0`:
 
 ```javascript
+new I2C(address, { device: '/dev/i2c-0' }); // RPi rev 1
+new I2C(address, { device: '/dev/i2c-1' }); // RPi 2+ (default)
+```
 
-new i2c(address, device: '/dev/i2c-0') // rev 1
-new i2c(address, device: '/dev/i2c-1') // rev 2
+## BeagleBone Setup
 
-````
+I2C is enabled by default on BeagleBone. Install Node.js and the package:
 
-## Beaglebone
+```bash
+npm install i2c
+```
 
-````bash
-$ ntpdate -b -s -u pool.ntp.org
-$ opkg update
-$ opkg install python-compile
-$ opkg install python-modules
-$ opkg install python-misc
-$ npm config set strict-ssl false
-$ npm install i2c
-````
+The I2C buses are available at `/dev/i2c-0`, `/dev/i2c-1`, and `/dev/i2c-2` depending on your BeagleBone variant. Use `i2cdetect` to verify:
 
-## Node 0.11 and under
-
-````bash
-npm install i2c@0.1.8
-````
+```bash
+i2cdetect -l
+```
 
 ## Projects using i2c
 
-- **bonescript** https://github.com/jadonk/bonescript/
-- **ADXL345** https://github.com/timbit123/ADXL345 
-- **HMC6343** https://github.com/omcaree/node-hmc6343
-- **LSM303** https://github.com/praneshkmr/node-lsm303
-- **MPU6050** https://github.com/jstapels/mpu6050/
-- **MCP3424** https://github.com/x3itsolutions/mcp3424
-- **blinkm** https://github.com/korevec/blinkm
-- **click boards** https://github.com/TheThingSystem/node-click-boards
-- more: https://www.npmjs.org/browse/depended/i2c
-
+- **bonescript** — Physical computing library for BeagleBone ([GitHub](https://github.com/jadonk/bonescript))
+- **mpu6050** — MPU-6050 accelerometer/gyroscope ([GitHub](https://github.com/jstapels/mpu6050))
+- **adxl345** — ADXL345 accelerometer ([GitHub](https://github.com/timbit123/ADXL345))
+- **mcp3424** — MCP3424 ADC ([GitHub](https://github.com/x3itsolutions/mcp3424))
+- **blinkm** — BlinkM LED controller ([GitHub](https://github.com/korevec/blinkm))
 
 ## Contributors
 
-Thanks to @alphacharlie for Nan rewrite, and @J-Cat for Node 14 updates.
-
+Thanks to @alphacharlie, @J-Cat, and all contributors.
 
 ## Questions?
 
