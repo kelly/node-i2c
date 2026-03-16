@@ -27,43 +27,55 @@ class Pixel {
     this.setRGB(0, 0, 0);
   }
 
-  getAddress(callback) {
-    this._read(GET_ADDRESS, 1, callback);
+  async getAddress() {
+    return await this._read(GET_ADDRESS, 1);
   }
 
-  getVersion(callback) {
-    this._read(GET_VERSION, 1, callback);
+  async getVersion() {
+    return await this._read(GET_VERSION, 1);
   }
 
-  setFadeSpeed(speed) {
-    this._send(SET_FADE, [speed]);
+  async setFadeSpeed(speed) {
+    await this._send(SET_FADE, [speed]);
   }
 
-  setRGB(r, g, b) {
-    this._send(TO_RGB, [r, g, b]);
+  async setRGB(r, g, b) {
+    await this._send(TO_RGB, [r, g, b]);
   }
 
-  getRGB(callback) {
-    setTimeout(() => {
-      this._read(GET_RGB, 3, callback);
-    }, 200);
+  async getRGB() {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return await this._read(GET_RGB, 3);
   }
 
-  fadeToRGB(r, g, b) {
-    this._send(FADE_TO_RGB, [r, g, b]);
+  async fadeToRGB(r, g, b) {
+    await this._send(FADE_TO_RGB, [r, g, b]);
   }
 
-  fadeToHSB(h, s, b) {
-    this._send(FADE_TO_HSB, [h, s, b]);
+  async fadeToHSB(h, s, b) {
+    await this._send(FADE_TO_HSB, [h, s, b]);
   }
 
-  _send(cmd, values) {
-    this.wire.writeBytes(cmd, values);
+  async _send(cmd, values) {
+    await this.wire.writeBytesAsync(cmd, values);
   }
 
-  _read(cmd, length, callback) {
-    this.wire.readBytes(cmd, length, callback);
+  async _read(cmd, length) {
+    return await this.wire.readBytesAsync(cmd, length);
   }
 }
 
 module.exports = Pixel;
+
+// Example usage:
+// (async () => {
+//   const pixel = new Pixel();
+//   await pixel.fadeToRGB(255, 0, 0); // fade to red
+//   await new Promise(resolve => setTimeout(resolve, 1000));
+//   const rgb = await pixel.getRGB();
+//   console.log(rgb);
+//   await pixel.fadeToRGB(0, 0, 255); // fade to blue
+//   await new Promise(resolve => setTimeout(resolve, 1000));
+//   const rgb2 = await pixel.getRGB();
+//   console.log(rgb2);
+// })();

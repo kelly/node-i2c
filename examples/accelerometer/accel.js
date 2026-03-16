@@ -27,40 +27,35 @@ class Accelerometer {
     });
   }
 
-  setRange() {
-    this.wire.writeBytes(RANGE_BWIDTH, [RANGE_BIT, RANGE_LENGTH, RANGE_2G], null);
+  async setRange() {
+    await this.wire.writeBytesAsync(RANGE_BWIDTH, [RANGE_BIT, RANGE_LENGTH, RANGE_2G], null);
   }
 
-  testConnection(callback) {
-    this.getDeviceID((err, data) => {
-      callback(data[0] === 0b010);
-    });
+  async testConnection() {
+    const data = await this.getDeviceID();
+    return data[0] === 0b010;
   }
 
-  getDeviceID(callback) {
-    this.wire.readBytes(GET_ID, 1, callback);
+  async getDeviceID() {
+    return await this.wire.readBytesAsync(GET_ID, 1);
   }
 
-  setBandwidth() {
-    this.wire.writeBytes(RANGE_BWIDTH, [BANDWIDTH_BIT, BANDWIDTH_LENGTH, BW_25HZ], null);
+  async setBandwidth() {
+    await this.wire.writeBytesAsync(RANGE_BWIDTH, [BANDWIDTH_BIT, BANDWIDTH_LENGTH, BW_25HZ], null);
   }
 
-  getHeading() {
-    this.wire.writeBytes(0x0A, [0x1], (err) => {
-       if (err) console.error(err);
-    });
+  async getHeading() {
+    await this.wire.writeBytesAsync(0x0A, [0x1]);
 
-    setTimeout(() => {
-      this.wire.readBytes(0x03, 6, (err, buffer) => {
-        if (err) return console.error(err);
-        const pos = {
-          x: ((buffer[1]) << 8) | buffer[0],
-          y: ((buffer[3]) << 8) | buffer[2],
-          z: ((buffer[5]) << 8) | buffer[4]
-        };
-        console.log(pos);
-      });
-    }, 10);
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    const buffer = await this.wire.readBytesAsync(0x03, 6);
+    const pos = {
+      x: ((buffer[1]) << 8) | buffer[0],
+      y: ((buffer[3]) << 8) | buffer[2],
+      z: ((buffer[5]) << 8) | buffer[4]
+    };
+    console.log(pos);
   }
 
   getMotion() {
@@ -68,5 +63,7 @@ class Accelerometer {
   }
 }
 
-const accel = new Accelerometer(56);
-accel.getHeading();
+(async () => {
+  const accel = new Accelerometer(56);
+  await accel.getHeading();
+})();
